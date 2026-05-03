@@ -2,6 +2,7 @@
 
 import json
 from pydantic import BaseModel
+from src.llm.config import get_action_model_config
 from src.llm.models import get_model, get_model_info
 from src.utils.progress import progress
 from src.graph.state import AgentState
@@ -34,9 +35,7 @@ def call_llm(
     if state and agent_name:
         model_name, model_provider = get_agent_model_config(state, agent_name)
     else:
-        # Use system defaults when no state or agent_name is provided
-        model_name = "gpt-4.1"
-        model_provider = "OPENAI"
+        model_name, model_provider = get_action_model_config(agent_name)
 
     # Extract API keys from state if available
     api_keys = None
@@ -174,9 +173,14 @@ def get_agent_model_config(state, agent_name):
         if model_name and model_provider:
             return model_name, model_provider.value if hasattr(model_provider, 'value') else str(model_provider)
     
-    # Fall back to global configuration (system defaults)
-    model_name = state.get("metadata", {}).get("model_name") or "gpt-4.1"
-    model_provider = state.get("metadata", {}).get("model_provider") or "OPENAI"
+    # Fall back to graph metadata, then runtime action/default config.
+    model_name = state.get("metadata", {}).get("model_name")
+    model_provider = state.get("metadata", {}).get("model_provider")
+
+    if not model_name or not model_provider:
+        configured_model, configured_provider = get_action_model_config(agent_name)
+        model_name = model_name or configured_model
+        model_provider = model_provider or configured_provider
     
     # Convert enum to string if necessary
     if hasattr(model_provider, 'value'):

@@ -13,6 +13,8 @@ from pydantic import BaseModel
 from typing import Tuple, List
 from pathlib import Path
 
+from src.llm.cli_providers import create_claude_cli_model, create_codex_cli_model
+
 
 class ModelProvider(str, Enum):
     """Enum for supported LLM providers"""
@@ -31,6 +33,8 @@ class ModelProvider(str, Enum):
     GIGACHAT = "GigaChat"
     AZURE_OPENAI = "Azure OpenAI"
     XAI = "xAI"
+    CODEX_CLI = "Codex CLI"
+    CLAUDE_CLI = "Claude CLI"
 
 
 class LLMModel(BaseModel):
@@ -118,7 +122,8 @@ OLLAMA_LLM_ORDER = [model.to_choice_tuple() for model in OLLAMA_MODELS]
 def get_model_info(model_name: str, model_provider: str) -> LLMModel | None:
     """Get model information by model_name"""
     all_models = AVAILABLE_MODELS + OLLAMA_MODELS
-    return next((model for model in all_models if model.model_name == model_name and model.provider == model_provider), None)
+    provider_value = model_provider.value if hasattr(model_provider, "value") else str(model_provider)
+    return next((model for model in all_models if model.model_name == model_name and model.provider.value == provider_value), None)
 
 
 def find_model_by_name(model_name: str) -> LLMModel | None:
@@ -139,8 +144,17 @@ def get_models_list():
     ]
 
 
-def get_model(model_name: str, model_provider: ModelProvider, api_keys: dict = None) -> ChatOpenAI | ChatGroq | ChatOllama | GigaChat | None:
-    if model_provider == ModelProvider.GROQ:
+def get_model(model_name: str, model_provider: ModelProvider | str, api_keys: dict = None) -> ChatOpenAI | ChatGroq | ChatOllama | GigaChat | None:
+    if not model_name or not model_provider:
+        raise ValueError("No LLM model configured. Choose a model in the UI/CLI or set VOLCANO_LLM_DEFAULT_MODEL_NAME and VOLCANO_LLM_DEFAULT_MODEL_PROVIDER.")
+    if not isinstance(model_provider, ModelProvider):
+        model_provider = ModelProvider(model_provider)
+
+    if model_provider == ModelProvider.CODEX_CLI:
+        return create_codex_cli_model(model_name)
+    elif model_provider == ModelProvider.CLAUDE_CLI:
+        return create_claude_cli_model(model_name)
+    elif model_provider == ModelProvider.GROQ:
         api_key = (api_keys or {}).get("GROQ_API_KEY") or os.getenv("GROQ_API_KEY")
         if not api_key:
             # Print error to console

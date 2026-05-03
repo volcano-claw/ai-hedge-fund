@@ -41,6 +41,7 @@ def add_common_args(
     if include_ollama:
         parser.add_argument("--ollama", action="store_true", help="Use Ollama for local LLM inference")
     parser.add_argument("--model", type=str, required=False, help="Model name to use (e.g., gpt-4o)")
+    parser.add_argument("--model-provider", type=str, required=False, help="Provider to use with --model (e.g., Codex CLI, Claude CLI, OpenAI)")
     return parser
 
 
@@ -102,9 +103,16 @@ def select_analysts(flags: dict | None = None) -> list[str]:
     return choices
 
 
-def select_model(use_ollama: bool, model_flag: str | None = None) -> tuple[str, str]:
+def select_model(use_ollama: bool, model_flag: str | None = None, model_provider_flag: str | None = None) -> tuple[str, str]:
     model_name: str = ""
     model_provider: str | None = None
+
+    if model_flag and model_provider_flag:
+        provider = ModelProvider(model_provider_flag).value
+        print(
+            f"\nUsing specified model: {Fore.CYAN}{provider}{Style.RESET_ALL} - {Fore.GREEN + Style.BRIGHT}{model_flag}{Style.RESET_ALL}\n"
+        )
+        return model_flag, provider
 
     if model_flag:
         model = find_model_by_name(model_flag)
@@ -268,7 +276,7 @@ def parse_cli_inputs(
         "analysts_all": getattr(args, "analysts_all", False),
         "analysts": getattr(args, "analysts", None),
     })
-    model_name, model_provider = select_model(getattr(args, "ollama", False), getattr(args, "model", None))
+    model_name, model_provider = select_model(getattr(args, "ollama", False), getattr(args, "model", None), getattr(args, "model_provider", None))
     start_date, end_date = resolve_dates(getattr(args, "start_date", None), getattr(args, "end_date", None), default_months_back=default_months_back)
 
     return CLIInputs(

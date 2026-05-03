@@ -1,5 +1,15 @@
 [
   {
+    "display_name": "Codex CLI (custom authenticated model)",
+    "model_name": "-",
+    "provider": "Codex CLI"
+  },
+  {
+    "display_name": "Claude CLI (custom authenticated model)",
+    "model_name": "-",
+    "provider": "Claude CLI"
+  },
+  {
     "display_name": "Grok 4",
     "model_name": "grok-4-0709",
     "provider": "xAI"
