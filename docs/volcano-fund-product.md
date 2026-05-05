@@ -4,7 +4,7 @@
 
 Volcano Fund dispose d’une landing privée brandée au-dessus de l’interface de workflows existante d’AI Hedge Fund.
 
-La landing inclut maintenant une interface Volcano Fund en français : connexion CLI Codex Max par device code, mode d’emploi intégré, statut de couverture marchés/Forex, brief de recherche guidé, persistance serveur, historique **brief → flux → exécution**, et panneau de **revue opérateur** persistante. L’opérateur peut préparer une connexion Codex dédiée à Volcano Fund sans exposer de token, comprendre le parcours d’utilisation directement dans l’interface, choisir un modèle, modifier le responsable, modifier la liste de tickers, écrire une question de recherche, sauvegarder le brouillon côté backend, recharger les briefs récents depuis l’historique serveur, créer/ouvrir un vrai flux prérempli depuis ce brief, voir le statut flux/exécution lié, puis sauvegarder des notes de revue pour la dernière exécution.
+La landing inclut maintenant une interface Volcano Fund en français : connexion CLI Codex Max par device code, mode d’emploi intégré, statut de couverture marchés/Forex, brief de recherche guidé, persistance serveur, historique **brief → flux → exécution**, fiche décision post-run, et panneau de **revue opérateur** persistante. L’opérateur peut préparer une connexion Codex dédiée à Volcano Fund sans exposer de token, comprendre le parcours d’utilisation directement dans l’interface, choisir un modèle, modifier le responsable, modifier la liste de tickers, écrire une question de recherche, sauvegarder le brouillon côté backend, recharger les briefs récents depuis l’historique serveur, créer/ouvrir un vrai flux prérempli depuis ce brief, voir le statut flux/exécution lié, lire une fiche décision structurée après exécution, puis sauvegarder des notes de revue pour la dernière exécution.
 
 URL live :
 
@@ -24,6 +24,8 @@ La surface est volontairement positionnée comme un **cockpit de recherche d’i
 - Backend route `GET /codex-auth/status`, `POST /codex-auth/device-login`, `DELETE /codex-auth/device-login`.
 - Le backend utilise un `CODEX_HOME` persistant sous `/app/data/codex-home` pour isoler l’auth Codex de Volcano Fund.
 - Les données applicatives backend (flows, briefs, reviews) sont stockées dans `/app/data/hedge_fund.db`, monté depuis `data/`, afin de survivre aux rebuilds/restarts Docker.
+- L’onglet de sortie affiche une `Fiche décision Volcano Fund` après un run : verdict par ticker, conviction, action lisible, arguments pour, risques/contre-arguments, points à vérifier et prochaine action humaine recommandée.
+- Cette fiche est une synthèse heuristique déterministe construite depuis `decisions` et `analyst_signals`; elle ne remplace ni la revue Raphaël/Alix ni un conseil financier.
 - Les contrôles de top bar ajoutés pour Volcano Fund ont des libellés/accessibilité en français.
 - La landing contient des modèles de brief pour Raphaël et Alix, tickers éditables, responsable éditable, brouillon d’exécution et action `Créer et ouvrir le flux d’analyse`.
 - Les briefs de recherche sont persistés côté serveur via `POST/GET/PUT/DELETE /research-briefs/`.
@@ -49,15 +51,16 @@ Statut actuel :
 - Persistance flux : stockage serveur existant `/flows/`.
 - Statut exécutions : agrégation en lecture seule depuis les données existantes `/flows/{flow_id}/runs`.
 - Revue exécution : notes/statuts opérateur persistés dans `volcano_run_reviews`; c’est une métadonnée de revue humaine, pas du conseil financier automatisé.
+- Fiche décision : synthèse post-run non persistée séparément pour cette tranche ; elle est recalculée côté UI depuis la sortie du run courant et sert de lecture opérationnelle avant revue humaine.
 - Trading : aucune exécution réelle de trading n’est activée.
 
 Cette tranche francise la surface Volcano Fund que nous avons ajoutée dans le fork. L’UI upstream d’origine contient encore des écrans anglais hors de cette surface ; ils pourront être francisés progressivement ou via une vraie internationalisation `fr/en`.
 
 ## Prochaine tranche recommandée
 
-Construire la tranche “détail de run” Volcano Fund :
+Construire la tranche “détail de run persistant” Volcano Fund :
 
-1. afficher les sorties/résumés des analystes par exécution,
+1. persister la fiche décision comme snapshot de run,
 2. ajouter un tiroir dédié détail + revue d’exécution,
 3. ajouter des snapshots avant/après décision pour les exécutions revues,
 4. ajouter des presets analystes éditables par modèle de brief,

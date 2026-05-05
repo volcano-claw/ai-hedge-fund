@@ -1,9 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps */
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 import { getActionColor, getDisplayName, getSignalColor, getStatusIcon } from './output-tab-utils';
+import { DecisionBrief } from './decision-brief';
 import { ReasoningContent } from './reasoning-content';
 
 // Progress Section Component
@@ -223,6 +225,7 @@ export function RegularOutput({
   return (
     <>
       <ProgressSection sortedAgents={sortedAgents} />
+      <DecisionBrief outputData={outputData} />
       <SummarySection outputData={outputData} />
       <AnalysisResultsSection outputData={outputData} />
     </>
