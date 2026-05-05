@@ -36,6 +36,12 @@ type ResearchTemplate = {
 
 const STORAGE_KEY = 'volcano-fund-research-brief-v1';
 
+const DEFAULT_VOLCANO_CODEX_MODEL = {
+  display_name: 'Codex Max via CLI',
+  model_name: 'gpt-5.4',
+  provider: 'Codex CLI',
+};
+
 const RESEARCH_TEMPLATES: ResearchTemplate[] = [
   {
     id: 'core-us-tech',
@@ -104,6 +110,9 @@ function buildResearchFlowDraft(researchBrief: ResearchTemplate, normalizedTicke
     startDate,
     endDate,
   };
+  const codexAgentInternalState = {
+    selectedModel: DEFAULT_VOLCANO_CODEX_MODEL,
+  };
 
   const nodes = [
     {
@@ -125,6 +134,7 @@ function buildResearchFlowDraft(researchBrief: ResearchTemplate, normalizedTicke
         name: 'Analyste technique',
         description: 'Contrôle du momentum, de la tendance et de la structure de marché.',
         status: 'Idle',
+        internal_state: codexAgentInternalState,
       },
     },
     {
@@ -135,6 +145,7 @@ function buildResearchFlowDraft(researchBrief: ResearchTemplate, normalizedTicke
         name: 'Analyste fondamental',
         description: 'Contrôle de la qualité, des données financières et de la durabilité du modèle.',
         status: 'Idle',
+        internal_state: codexAgentInternalState,
       },
     },
     {
@@ -145,6 +156,7 @@ function buildResearchFlowDraft(researchBrief: ResearchTemplate, normalizedTicke
         name: 'Analyste valorisation',
         description: 'Contrôle de valorisation et de marge de sécurité.',
         status: 'Idle',
+        internal_state: codexAgentInternalState,
       },
     },
     {
@@ -155,6 +167,7 @@ function buildResearchFlowDraft(researchBrief: ResearchTemplate, normalizedTicke
         name: 'Gérant de portefeuille',
         description: 'Synthétise les signaux des analystes en brouillon de décision de recherche.',
         status: 'Idle',
+        internal_state: codexAgentInternalState,
       },
     },
   ];
@@ -185,6 +198,11 @@ Brief: ${researchBrief.brief}`,
       nodeStates: {
         [stockNodeId]: stockInternalState,
       },
+      agentModels: [technicalNodeId, fundamentalsNodeId, valuationNodeId, portfolioNodeId].map(agentId => ({
+        agent_id: agentId,
+        model_name: DEFAULT_VOLCANO_CODEX_MODEL.model_name,
+        model_provider: DEFAULT_VOLCANO_CODEX_MODEL.provider,
+      })),
     },
     tags: ['volcano-fund', 'research-brief', researchBrief.owner.toLowerCase().replace(/[^a-z0-9]+/g, '-')],
   };

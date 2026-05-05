@@ -4,6 +4,8 @@ export enum ModelProvider {
   ANTHROPIC = 'Anthropic',
   GROQ = 'Groq',
   OLLAMA = 'Ollama',
+  CODEX_CLI = 'Codex CLI',
+  CLAUDE_CLI = 'Claude CLI',
 }
 
 export interface AgentModelConfig {
@@ -15,7 +17,7 @@ export interface AgentModelConfig {
 export interface GraphNode {
   id: string;
   type?: string;
-  data?: any;
+  data?: unknown;
   position?: { x: number; y: number };
 }
 
@@ -24,7 +26,7 @@ export interface GraphEdge {
   source: string;
   target: string;
   type?: string;
-  data?: any;
+  data?: unknown;
 }
 
 export interface PortfolioPosition {
@@ -61,9 +63,9 @@ export interface BacktestDayResult {
   date: string;
   portfolio_value: number;
   cash: number;
-  decisions: Record<string, any>;
+  decisions: Record<string, unknown>;
   executed_trades: Record<string, number>;
-  analyst_signals: Record<string, any>;
+  analyst_signals: Record<string, unknown>;
   current_prices: Record<string, number>;
   long_exposure: number;
   short_exposure: number;

@@ -1,7 +1,7 @@
 [
   {
-    "display_name": "Codex CLI (custom authenticated model)",
-    "model_name": "-",
+    "display_name": "Codex Max via CLI",
+    "model_name": "gpt-5.4",
     "provider": "Codex CLI"
   },
   {

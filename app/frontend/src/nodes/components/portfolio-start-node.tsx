@@ -21,9 +21,11 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useFlowContext } from '@/contexts/flow-context';
 import { useLayoutContext } from '@/contexts/layout-context';
 import { useNodeContext } from '@/contexts/node-context';
+import { type ModelProvider } from '@/services/types';
 import { useFlowConnection } from '@/hooks/use-flow-connection';
 import { useKeyboardShortcuts } from '@/hooks/use-keyboard-shortcuts';
 import { useNodeState } from '@/hooks/use-node-state';
+import { type LanguageModel } from '@/data/models';
 import { cn, formatKeyboardShortcut } from '@/lib/utils';
 import { type PortfolioStartNode } from '../types';
 import { NodeShell } from './node-shell';
@@ -185,12 +187,12 @@ export function PortfolioStartNode({
     const agentModels = [];
     const allAgentModels = getAllAgentModels(flowId);
     for (const node of agentNodes) {
-      const model = allAgentModels[node.id];
+      const model = allAgentModels[node.id] || (node.data?.internal_state as { selectedModel?: LanguageModel } | undefined)?.selectedModel;
       if (model) {
         agentModels.push({
           agent_id: node.id,
           model_name: model.model_name,
-          model_provider: model.provider as any
+          model_provider: model.provider as ModelProvider
         });
       }
     }
