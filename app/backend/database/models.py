@@ -128,3 +128,18 @@ class VolcanoResearchBrief(Base):
     flow_id = Column(Integer, ForeignKey("hedge_fund_flows.id"), nullable=True, index=True)
     extra_metadata = Column(JSON, nullable=True)
 
+class VolcanoRunReview(Base):
+    """Operator review notes for Volcano Fund flow runs."""
+    __tablename__ = "volcano_run_reviews"
+
+    id = Column(Integer, primary_key=True, index=True)
+    run_id = Column(Integer, ForeignKey("hedge_fund_flow_runs.id"), nullable=False, unique=True, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    review_status = Column(String(50), nullable=False, default="draft")
+    reviewer = Column(String(120), nullable=True)
+    notes = Column(Text, nullable=True)
+    decision = Column(String(120), nullable=True)
+    extra_metadata = Column(JSON, nullable=True)
+

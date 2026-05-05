@@ -6,6 +6,7 @@ from app.backend.database import get_db
 from app.backend.repositories.research_brief_repository import ResearchBriefRepository
 from app.backend.repositories.flow_repository import FlowRepository
 from app.backend.repositories.flow_run_repository import FlowRunRepository
+from app.backend.repositories.run_review_repository import RunReviewRepository
 from app.backend.models.schemas import (
     ResearchBriefCreateRequest,
     ResearchBriefUpdateRequest,
@@ -54,6 +55,7 @@ async def get_research_brief_history(limit: int = 20, db: Session = Depends(get_
         brief_repo = ResearchBriefRepository(db)
         flow_repo = FlowRepository(db)
         run_repo = FlowRunRepository(db)
+        review_repo = RunReviewRepository(db)
         history = []
 
         for brief in brief_repo.get_all_briefs(limit=limit):
@@ -65,6 +67,10 @@ async def get_research_brief_history(limit: int = 20, db: Session = Depends(get_
                 "latest_run_status": None,
                 "latest_run_number": None,
                 "latest_run_created_at": None,
+                "review_status": None,
+                "review_decision": None,
+                "review_notes": None,
+                "reviewer": None,
             })
 
             if brief.flow_id:
@@ -77,6 +83,12 @@ async def get_research_brief_history(limit: int = 20, db: Session = Depends(get_
                     payload["latest_run_status"] = latest_run.status
                     payload["latest_run_number"] = latest_run.run_number
                     payload["latest_run_created_at"] = latest_run.created_at
+                    review = review_repo.get_by_run_id(latest_run.id)
+                    if review:
+                        payload["review_status"] = review.review_status
+                        payload["review_decision"] = review.decision
+                        payload["review_notes"] = review.notes
+                        payload["reviewer"] = review.reviewer
 
             history.append(ResearchBriefHistoryResponse(**payload))
 

@@ -23,6 +23,10 @@ export interface ResearchBriefRecord extends ResearchBriefPayload {
   latest_run_status?: string | null;
   latest_run_number?: number | null;
   latest_run_created_at?: string | null;
+  review_status?: string | null;
+  review_decision?: string | null;
+  review_notes?: string | null;
+  reviewer?: string | null;
 }
 
 export const researchBriefService = {

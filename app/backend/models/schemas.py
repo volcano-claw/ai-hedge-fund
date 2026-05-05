@@ -333,4 +333,30 @@ class ResearchBriefHistoryResponse(ResearchBriefResponse):
     latest_run_status: Optional[str] = None
     latest_run_number: Optional[int] = None
     latest_run_created_at: Optional[datetime] = None
+    review_status: Optional[str] = None
+    review_decision: Optional[str] = None
+    review_notes: Optional[str] = None
+    reviewer: Optional[str] = None
+
+# Volcano Fund run review schemas
+class RunReviewBase(BaseModel):
+    review_status: str = Field(default="draft", max_length=50)
+    reviewer: Optional[str] = Field(None, max_length=120)
+    notes: Optional[str] = None
+    decision: Optional[str] = Field(None, max_length=120)
+    extra_metadata: Optional[Dict[str, Any]] = None
+
+
+class RunReviewUpsertRequest(RunReviewBase):
+    pass
+
+
+class RunReviewResponse(RunReviewBase):
+    id: int
+    run_id: int
+    created_at: datetime
+    updated_at: Optional[datetime]
+
+    class Config:
+        from_attributes = True
 

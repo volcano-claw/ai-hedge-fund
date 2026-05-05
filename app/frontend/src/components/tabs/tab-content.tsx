@@ -2,6 +2,7 @@ import { useTabsContext } from '@/contexts/tabs-context';
 import { cn } from '@/lib/utils';
 import { flowService } from '@/services/flow-service';
 import { researchBriefService, type ResearchBriefRecord } from '@/services/research-brief-service';
+import { runReviewService } from '@/services/run-review-service';
 import { TabService } from '@/services/tab-service';
 import {
   BarChart3,
@@ -188,6 +189,12 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
   const [createdFlowMessage, setCreatedFlowMessage] = useState<string | null>(null);
   const [createFlowError, setCreateFlowError] = useState<string | null>(null);
   const [briefSyncMessage, setBriefSyncMessage] = useState<string | null>(null);
+  const [selectedRunReview, setSelectedRunReview] = useState<{ runId: number; flowId: number; title: string } | null>(null);
+  const [reviewStatus, setReviewStatus] = useState('draft');
+  const [reviewDecision, setReviewDecision] = useState('watch');
+  const [reviewNotes, setReviewNotes] = useState('');
+  const [isSavingReview, setIsSavingReview] = useState(false);
+  const [reviewMessage, setReviewMessage] = useState<string | null>(null);
 
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(researchBrief));
@@ -303,6 +310,56 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
       return `Flow #${brief.flow_id} · aucun run`;
     }
     return `Flow #${brief.flow_id} · ${brief.run_count} run${brief.run_count > 1 ? 's' : ''} · ${brief.latest_run_status || 'status inconnu'}`;
+  };
+
+
+  const openRunReview = async (brief: ResearchBriefRecord) => {
+    if (!brief.latest_run_id || !brief.flow_id) {
+      return;
+    }
+
+    setSelectedRunReview({ runId: brief.latest_run_id, flowId: brief.flow_id, title: brief.title });
+    setReviewStatus(brief.review_status || 'draft');
+    setReviewDecision(brief.review_decision || 'watch');
+    setReviewNotes(brief.review_notes || '');
+    setReviewMessage(null);
+
+    try {
+      const review = await runReviewService.getReview(brief.latest_run_id);
+      if (review) {
+        setReviewStatus(review.review_status || 'draft');
+        setReviewDecision(review.decision || 'watch');
+        setReviewNotes(review.notes || '');
+      }
+    } catch (error) {
+      console.error('Failed to load run review:', error);
+      setReviewMessage('Review non chargée; création possible.');
+    }
+  };
+
+  const saveRunReview = async () => {
+    if (!selectedRunReview) {
+      return;
+    }
+
+    setIsSavingReview(true);
+    setReviewMessage(null);
+    try {
+      await runReviewService.saveReview(selectedRunReview.runId, {
+        review_status: reviewStatus,
+        decision: reviewDecision,
+        reviewer: researchBrief.owner || 'Raphaël',
+        notes: reviewNotes,
+        extra_metadata: { source: 'volcano-fund-landing-review-panel' },
+      });
+      await refreshBriefHistory();
+      setReviewMessage(`Review sauvegardée pour run #${selectedRunReview.runId}`);
+    } catch (error) {
+      console.error('Failed to save run review:', error);
+      setReviewMessage('Sauvegarde review impossible.');
+    } finally {
+      setIsSavingReview(false);
+    }
   };
 
   const createFlowFromBrief = async () => {
@@ -537,9 +594,91 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
                     {brief.flow_name ? (
                       <div className="mt-1 truncate text-xs text-stone-500">{brief.flow_name}</div>
                     ) : null}
+                    {brief.latest_run_id ? (
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        onClick={event => { event.stopPropagation(); openRunReview(brief); }}
+                        onKeyDown={event => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            openRunReview(brief);
+                          }
+                        }}
+                        className="mt-2 rounded-lg border border-emerald-400/20 bg-emerald-400/10 px-2 py-1 text-center text-xs text-emerald-100 hover:bg-emerald-400/20"
+                      >
+                        Review run #{brief.latest_run_id}
+                      </div>
+                    ) : null}
                   </button>
                 ))}
               </div>
+            </div>
+          ) : null}
+
+
+          {selectedRunReview ? (
+            <div className="mt-5 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div>
+                  <div className="text-xs uppercase tracking-[0.22em] text-emerald-200">Review opérateur</div>
+                  <div className="mt-1 text-sm text-stone-200">Run #{selectedRunReview.runId} · Flow #{selectedRunReview.flowId} · {selectedRunReview.title}</div>
+                </div>
+                <button type="button" onClick={() => setSelectedRunReview(null)} className="text-xs text-stone-400 hover:text-white">Fermer</button>
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-2">
+                <label className="text-xs uppercase tracking-[0.18em] text-stone-400">
+                  Statut review
+                  <select
+                    value={reviewStatus}
+                    onChange={event => setReviewStatus(event.target.value)}
+                    className="mt-2 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white outline-none"
+                  >
+                    <option value="draft">draft</option>
+                    <option value="reviewed">reviewed</option>
+                    <option value="archived">archived</option>
+                  </select>
+                </label>
+                <label className="text-xs uppercase tracking-[0.18em] text-stone-400">
+                  Décision
+                  <select
+                    value={reviewDecision}
+                    onChange={event => setReviewDecision(event.target.value)}
+                    className="mt-2 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white outline-none"
+                  >
+                    <option value="watch">watch</option>
+                    <option value="investigate">investigate</option>
+                    <option value="reject">reject</option>
+                    <option value="archive">archive</option>
+                  </select>
+                </label>
+              </div>
+
+              <label className="mt-4 block text-xs uppercase tracking-[0.18em] text-stone-400">
+                Notes
+                <textarea
+                  value={reviewNotes}
+                  onChange={event => setReviewNotes(event.target.value)}
+                  rows={4}
+                  className="mt-2 w-full resize-none rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm leading-6 text-white outline-none"
+                  placeholder="Synthèse, points à vérifier, décision d'équipe..."
+                />
+              </label>
+
+              <button
+                type="button"
+                onClick={saveRunReview}
+                disabled={isSavingReview}
+                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-400 px-4 py-3 text-sm font-semibold text-black transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isSavingReview ? <Loader2 className="animate-spin" size={16} /> : <FileText size={16} />}
+                Sauvegarder la review
+              </button>
+              {reviewMessage ? (
+                <div className="mt-3 rounded-xl border border-white/10 bg-black/20 p-3 text-xs text-stone-100">{reviewMessage}</div>
+              ) : null}
             </div>
           ) : null}
         </section>
