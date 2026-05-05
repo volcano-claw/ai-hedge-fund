@@ -7,10 +7,12 @@ import { runReviewService } from '@/services/run-review-service';
 import { TabService } from '@/services/tab-service';
 import {
   BarChart3,
+  BookOpen,
   BrainCircuit,
   ClipboardList,
   FileText,
   FolderOpen,
+  Globe2,
   LockKeyhole,
   ShieldCheck,
   Loader2,
@@ -583,6 +585,53 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
           {codexMessage ? (
             <div className="mt-3 rounded-xl border border-white/10 bg-black/20 p-3 text-xs text-stone-100">{codexMessage}</div>
           ) : null}
+        </section>
+
+        <section className="mt-10 grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
+          <div className="rounded-3xl border border-white/10 bg-black/35 p-5 shadow-2xl shadow-black/30 backdrop-blur">
+            <div className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.24em] text-orange-200">
+              <BookOpen size={16} />
+              Mode d’emploi Volcano Fund
+            </div>
+            <div className="grid gap-3 text-sm text-stone-300 md:grid-cols-2">
+              {[
+                ['1 · Codex Max', 'Connecte le CLI avec le code OpenAI généré dans le panneau bleu.'],
+                ['2 · Brief', 'Choisis un modèle, ajuste responsable, tickers et question de recherche.'],
+                ['3 · Flux', 'Clique “Créer et ouvrir le flux” pour générer le workflow analystes.'],
+                ['4 · Exécution', 'Lance/analyse le flux dans l’onglet ouvert, puis reviens à l’historique.'],
+                ['5 · Historique', 'Suis le lien brief → flux → exécution et recharge un brief si besoin.'],
+                ['6 · Revue', 'Ajoute une décision humaine : à suivre, approfondir, rejeter ou archiver.'],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                  <div className="text-xs font-semibold uppercase tracking-[0.18em] text-orange-100">{label}</div>
+                  <div className="mt-2 leading-6">{value}</div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 rounded-2xl border border-amber-400/20 bg-amber-400/10 p-4 text-sm leading-6 text-amber-50">
+              Le cockpit sert à produire une recherche documentée. Il ne passe aucun ordre réel et ne remplace pas une validation humaine.
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-violet-400/20 bg-violet-400/10 p-5 shadow-2xl shadow-black/30 backdrop-blur">
+            <div className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.24em] text-violet-200">
+              <Globe2 size={16} />
+              Couverture marchés
+            </div>
+            <div className="space-y-3 text-sm leading-6 text-stone-300">
+              <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-4">
+                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-200">Disponible maintenant</div>
+                <div className="mt-2">Actions et ETF via tickers classiques, selon les données disponibles côté backend.</div>
+              </div>
+              <div className="rounded-2xl border border-amber-400/20 bg-amber-400/10 p-4">
+                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-200">Forex</div>
+                <div className="mt-2">Pas encore natif/validé pour les paires FX type EUR/USD ou USD/JPY. On peut l’ajouter comme prochaine tranche avec fournisseur de données Forex, presets FX et nœuds macro dédiés.</div>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-xs text-stone-400">
+                État produit : multi-actifs en intention, mais Forex non câblé en production tant qu’un flux de données FX fiable n’est pas branché et testé.
+              </div>
+            </div>
+          </div>
         </section>
 
         <section className="mt-10 rounded-3xl border border-white/10 bg-black/35 p-5 shadow-2xl shadow-black/30 backdrop-blur">
