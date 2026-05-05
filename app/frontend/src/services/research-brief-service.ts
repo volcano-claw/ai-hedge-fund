@@ -17,9 +17,23 @@ export interface ResearchBriefRecord extends ResearchBriefPayload {
   flow_id?: number | null;
   created_at: string;
   updated_at?: string | null;
+  flow_name?: string | null;
+  run_count?: number;
+  latest_run_id?: number | null;
+  latest_run_status?: string | null;
+  latest_run_number?: number | null;
+  latest_run_created_at?: string | null;
 }
 
 export const researchBriefService = {
+  async listBriefHistory(limit = 10): Promise<ResearchBriefRecord[]> {
+    const response = await fetch(`${API_BASE_URL}/research-briefs/history/?limit=${limit}`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch research brief history');
+    }
+    return response.json();
+  },
+
   async listBriefs(limit = 10): Promise<ResearchBriefRecord[]> {
     const response = await fetch(`${API_BASE_URL}/research-briefs/?limit=${limit}`);
     if (!response.ok) {

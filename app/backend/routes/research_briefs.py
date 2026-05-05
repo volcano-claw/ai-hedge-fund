@@ -4,10 +4,13 @@ from typing import List
 
 from app.backend.database import get_db
 from app.backend.repositories.research_brief_repository import ResearchBriefRepository
+from app.backend.repositories.flow_repository import FlowRepository
+from app.backend.repositories.flow_run_repository import FlowRunRepository
 from app.backend.models.schemas import (
     ResearchBriefCreateRequest,
     ResearchBriefUpdateRequest,
     ResearchBriefResponse,
+    ResearchBriefHistoryResponse,
     ErrorResponse,
 )
 
@@ -42,6 +45,44 @@ async def get_research_briefs(limit: int = 20, db: Session = Depends(get_db)):
         return [ResearchBriefResponse.from_orm(brief) for brief in repo.get_all_briefs(limit=limit)]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to retrieve research briefs: {str(e)}")
+
+
+@router.get("/history/", response_model=List[ResearchBriefHistoryResponse], responses={500: {"model": ErrorResponse}})
+async def get_research_brief_history(limit: int = 20, db: Session = Depends(get_db)):
+    """List recent briefs enriched with linked flow and latest run status."""
+    try:
+        brief_repo = ResearchBriefRepository(db)
+        flow_repo = FlowRepository(db)
+        run_repo = FlowRunRepository(db)
+        history = []
+
+        for brief in brief_repo.get_all_briefs(limit=limit):
+            payload = ResearchBriefResponse.from_orm(brief).model_dump()
+            payload.update({
+                "flow_name": None,
+                "run_count": 0,
+                "latest_run_id": None,
+                "latest_run_status": None,
+                "latest_run_number": None,
+                "latest_run_created_at": None,
+            })
+
+            if brief.flow_id:
+                flow = flow_repo.get_flow_by_id(brief.flow_id)
+                latest_run = run_repo.get_latest_flow_run(brief.flow_id)
+                payload["flow_name"] = flow.name if flow else None
+                payload["run_count"] = run_repo.get_flow_run_count(brief.flow_id)
+                if latest_run:
+                    payload["latest_run_id"] = latest_run.id
+                    payload["latest_run_status"] = latest_run.status
+                    payload["latest_run_number"] = latest_run.run_number
+                    payload["latest_run_created_at"] = latest_run.created_at
+
+            history.append(ResearchBriefHistoryResponse(**payload))
+
+        return history
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve research brief history: {str(e)}")
 
 
 @router.get("/{brief_id}", response_model=ResearchBriefResponse, responses={404: {"model": ErrorResponse}, 500: {"model": ErrorResponse}})

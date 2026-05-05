@@ -4,7 +4,7 @@
 
 Volcano Fund has a branded private landing surface on top of the existing AI Hedge Fund workflow UI.
 
-The landing now includes a guided research brief panel with **server-side persistence**. It lets the operator choose a template, edit the owner, edit the ticker watchlist, write a research question, save the draft to the backend, reload recent briefs from server history, and create/open a real workflow tab seeded from that brief.
+The landing includes a guided research brief panel with **server-side persistence** and a lightweight **brief → flow → run history** view. It lets the operator choose a template, edit the owner, edit the ticker watchlist, write a research question, save the draft to the backend, reload recent briefs from server history, create/open a real workflow tab seeded from that brief, and see whether a saved brief is linked to a flow and latest run status.
 
 Live URL:
 
@@ -18,7 +18,8 @@ The surface is intentionally positioned as an **AI investment research cockpit**
 - Empty workspace welcome screen presents Volcano Fund branding, status, and private-access framing.
 - Landing screen includes research brief templates for Raphaël and Alix, editable tickers, editable owner, a generated run draft, and a `Créer et ouvrir le flow` action.
 - Research briefs are persisted server-side through `POST/GET/PUT/DELETE /research-briefs/`.
-- The brief panel loads recent server history and can restore a recent brief into the form.
+- Enriched history endpoint `GET /research-briefs/history/` returns each recent brief with linked `flow_name`, `run_count`, `latest_run_id`, `latest_run_status`, and latest run timestamp when available.
+- The brief panel loads recent server history, can restore a recent brief into the form, and displays linked flow/run status directly on each history card.
 - The create/open action saves or updates the server brief, creates a real flow through `/flows/`, then links the brief to the generated `flow_id` with status `flow_created`.
 - Generated flows include a seeded Stock Input node, analyst nodes, Portfolio Manager node, edges, tags, and brief metadata.
 - Top bar shows a compact Volcano Fund mark.
@@ -33,16 +34,17 @@ Current status:
 - Health: backend exposes `GET /healthz`; UI exposes `GET /healthz`.
 - Brief persistence: server-side SQLite table `volcano_research_briefs` plus local browser backup.
 - Flow persistence: existing server-side `/flows/` storage.
+- Run status: read-only aggregation from existing `/flows/{flow_id}/runs` data; no new trading/execution behavior added.
 - Trading: no real trading execution is enabled.
 
 This is still a research/education cockpit. A future application-auth slice may add real in-app users, roles, sessions, and audit trails.
 
 ## Next recommended slice
 
-Build the next Volcano Fund run-history slice:
+Build the next Volcano Fund run-review slice:
 
-1. show linked flow/run status next to each saved brief,
-2. add a dedicated run review/history panel for Raphaël and Alix,
-3. add editable analyst presets per brief template,
-4. connect accepted briefs to execution preparation and reviewed run status,
+1. add a dedicated run review panel opened from history,
+2. expose analyst outputs/results summary per run,
+3. add operator notes and review status (`draft`, `reviewed`, `archived`),
+4. add editable analyst presets per brief template,
 5. then app-level auth if multi-user usage becomes important.

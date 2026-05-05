@@ -196,7 +196,7 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
   useEffect(() => {
     const loadBriefHistory = async () => {
       try {
-        const briefs = await researchBriefService.listBriefs(6);
+        const briefs = await researchBriefService.listBriefHistory(6);
         setBriefHistory(briefs);
         if (briefs.length > 0) {
           const latest = briefs[0];
@@ -249,7 +249,7 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
   });
 
   const refreshBriefHistory = async () => {
-    const briefs = await researchBriefService.listBriefs(6);
+    const briefs = await researchBriefService.listBriefHistory(6);
     setBriefHistory(briefs);
   };
 
@@ -292,6 +292,17 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
     setBriefSyncMessage(`Brief serveur chargé #${brief.id}`);
     setCreatedFlowMessage(null);
     setCreateFlowError(null);
+  };
+
+
+  const runStatusLabel = (brief: ResearchBriefRecord) => {
+    if (!brief.flow_id) {
+      return 'Aucun flow lié';
+    }
+    if (!brief.run_count) {
+      return `Flow #${brief.flow_id} · aucun run`;
+    }
+    return `Flow #${brief.flow_id} · ${brief.run_count} run${brief.run_count > 1 ? 's' : ''} · ${brief.latest_run_status || 'status inconnu'}`;
   };
 
   const createFlowFromBrief = async () => {
@@ -510,7 +521,7 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
 
           {briefHistory.length > 0 ? (
             <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-              <div className="mb-3 text-xs uppercase tracking-[0.22em] text-stone-400">Historique serveur récent</div>
+              <div className="mb-3 text-xs uppercase tracking-[0.22em] text-stone-400">Historique brief → flow → run</div>
               <div className="grid gap-3 md:grid-cols-3">
                 {briefHistory.slice(0, 3).map(brief => (
                   <button
@@ -522,6 +533,10 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
                     <div className="truncate text-sm font-semibold text-white">#{brief.id} · {brief.title}</div>
                     <div className="mt-1 text-xs text-stone-400">{brief.owner} · {brief.status}</div>
                     <div className="mt-2 truncate text-xs text-orange-200/80">{brief.tickers}</div>
+                    <div className="mt-2 rounded-lg border border-white/10 bg-white/[0.05] px-2 py-1 text-xs text-stone-300">{runStatusLabel(brief)}</div>
+                    {brief.flow_name ? (
+                      <div className="mt-1 truncate text-xs text-stone-500">{brief.flow_name}</div>
+                    ) : null}
                   </button>
                 ))}
               </div>

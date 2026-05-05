@@ -325,3 +325,12 @@ class ResearchBriefResponse(ResearchBriefBase):
     class Config:
         from_attributes = True
 
+
+class ResearchBriefHistoryResponse(ResearchBriefResponse):
+    flow_name: Optional[str] = None
+    run_count: int = 0
+    latest_run_id: Optional[int] = None
+    latest_run_status: Optional[str] = None
+    latest_run_number: Optional[int] = None
+    latest_run_created_at: Optional[datetime] = None
+
