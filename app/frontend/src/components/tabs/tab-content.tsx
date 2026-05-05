@@ -1,5 +1,6 @@
 import { useTabsContext } from '@/contexts/tabs-context';
 import { cn } from '@/lib/utils';
+import { codexAuthService, type CodexAuthStatus, type CodexDeviceLogin } from '@/services/codex-auth-service';
 import { flowService } from '@/services/flow-service';
 import { researchBriefService, type ResearchBriefRecord } from '@/services/research-brief-service';
 import { runReviewService } from '@/services/run-review-service';
@@ -195,6 +196,10 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
   const [reviewNotes, setReviewNotes] = useState('');
   const [isSavingReview, setIsSavingReview] = useState(false);
   const [reviewMessage, setReviewMessage] = useState<string | null>(null);
+  const [codexStatus, setCodexStatus] = useState<CodexAuthStatus | null>(null);
+  const [codexDeviceLogin, setCodexDeviceLogin] = useState<CodexDeviceLogin | null>(null);
+  const [codexMessage, setCodexMessage] = useState<string | null>(null);
+  const [isStartingCodexLogin, setIsStartingCodexLogin] = useState(false);
 
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(researchBrief));
@@ -224,6 +229,21 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
     };
 
     loadBriefHistory();
+  }, []);
+
+  useEffect(() => {
+    const loadCodexStatus = async () => {
+      try {
+        const status = await codexAuthService.getStatus();
+        setCodexStatus(status);
+        setCodexDeviceLogin(status.active_device_login || null);
+      } catch (error) {
+        console.error('Échec du chargement du statut Codex:', error);
+        setCodexMessage('Statut Codex indisponible.');
+      }
+    };
+
+    loadCodexStatus();
   }, []);
 
   const normalizedTickers = useMemo(() => (
@@ -334,6 +354,37 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
     } catch (error) {
       console.error('Échec du chargement de la revue de l’exécution:', error);
       setReviewMessage('Revue non chargée ; création possible.');
+    }
+  };
+
+  const startCodexDeviceLogin = async () => {
+    setIsStartingCodexLogin(true);
+    setCodexMessage(null);
+    try {
+      const login = await codexAuthService.startDeviceLogin();
+      setCodexDeviceLogin(login);
+      setCodexMessage(login.already_running
+        ? 'Connexion Codex déjà en attente. Utilise le code affiché.'
+        : 'Code Codex généré. Ouvre le lien, connecte ton compte ChatGPT/Codex Max, puis saisis le code.');
+    } catch (error) {
+      console.error('Échec de préparation de la connexion Codex:', error);
+      setCodexMessage('Impossible de préparer la connexion Codex depuis le backend.');
+    } finally {
+      setIsStartingCodexLogin(false);
+    }
+  };
+
+  const refreshCodexStatus = async () => {
+    try {
+      const status = await codexAuthService.getStatus();
+      setCodexStatus(status);
+      setCodexDeviceLogin(status.active_device_login || codexDeviceLogin);
+      setCodexMessage(status.logged_in
+        ? `Codex connecté via ${status.login_method || 'compte actif'}.`
+        : status.message);
+    } catch (error) {
+      console.error('Échec de rafraîchissement du statut Codex:', error);
+      setCodexMessage('Rafraîchissement Codex impossible.');
     }
   };
 
@@ -478,6 +529,61 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
             </div>
           </aside>
         </div>
+
+        <section className="mt-10 rounded-3xl border border-sky-400/20 bg-sky-400/10 p-5 shadow-2xl shadow-black/30 backdrop-blur">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <div className="text-sm font-semibold uppercase tracking-[0.24em] text-sky-200">Connexion Codex Max</div>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-stone-300">
+                Prépare une connexion CLI Codex dédiée à Volcano Fund. Le site affiche uniquement le lien et le code temporaire OpenAI; aucun token ni mot de passe n’est affiché.
+              </p>
+              <div className="mt-3 text-xs text-stone-400">
+                Statut : {codexStatus?.logged_in ? `connecté via ${codexStatus.login_method || 'Codex'}` : codexStatus?.installed ? 'CLI disponible, connexion à faire' : 'CLI non disponible'}
+              </div>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <button
+                type="button"
+                onClick={startCodexDeviceLogin}
+                disabled={isStartingCodexLogin || !codexStatus?.installed}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-sky-300 px-4 py-3 text-sm font-semibold text-black transition hover:bg-sky-200 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isStartingCodexLogin ? <Loader2 className="animate-spin" size={16} /> : <LockKeyhole size={16} />}
+                Générer le code Codex
+              </button>
+              <button
+                type="button"
+                onClick={refreshCodexStatus}
+                className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm font-semibold text-stone-100 transition hover:bg-white/[0.1]"
+              >
+                Vérifier le statut
+              </button>
+            </div>
+          </div>
+
+          {codexDeviceLogin ? (
+            <div className="mt-4 grid gap-3 rounded-2xl border border-white/10 bg-black/25 p-4 md:grid-cols-[1fr_auto] md:items-center">
+              <div>
+                <div className="text-xs uppercase tracking-[0.18em] text-sky-200">Code temporaire OpenAI</div>
+                <div className="mt-2 font-mono text-3xl font-semibold tracking-[0.18em] text-white">{codexDeviceLogin.user_code}</div>
+                <a className="mt-2 inline-block text-sm text-sky-200 underline" href={codexDeviceLogin.verification_url} target="_blank" rel="noreferrer">
+                  Ouvrir la page de connexion Codex
+                </a>
+                <div className="mt-2 text-xs text-stone-400">Expire en environ {Math.round(codexDeviceLogin.expires_in_seconds / 60)} minutes. Ne partage pas ce code hors de ton navigateur.</div>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3 text-xs leading-5 text-stone-300">
+                1. Ouvre le lien<br />
+                2. Connecte ton compte ChatGPT/Codex Max<br />
+                3. Saisis le code<br />
+                4. Clique “Vérifier le statut”
+              </div>
+            </div>
+          ) : null}
+
+          {codexMessage ? (
+            <div className="mt-3 rounded-xl border border-white/10 bg-black/20 p-3 text-xs text-stone-100">{codexMessage}</div>
+          ) : null}
+        </section>
 
         <section className="mt-10 rounded-3xl border border-white/10 bg-black/35 p-5 shadow-2xl shadow-black/30 backdrop-blur">
           <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

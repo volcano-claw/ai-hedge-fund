@@ -4,7 +4,7 @@
 
 Volcano Fund dispose d’une landing privée brandée au-dessus de l’interface de workflows existante d’AI Hedge Fund.
 
-La landing inclut maintenant une interface Volcano Fund en français : brief de recherche guidé, persistance serveur, historique **brief → flux → exécution**, et panneau de **revue opérateur** persistante. L’opérateur peut choisir un modèle, modifier le responsable, modifier la liste de tickers, écrire une question de recherche, sauvegarder le brouillon côté backend, recharger les briefs récents depuis l’historique serveur, créer/ouvrir un vrai flux prérempli depuis ce brief, voir le statut flux/exécution lié, puis sauvegarder des notes de revue pour la dernière exécution.
+La landing inclut maintenant une interface Volcano Fund en français : connexion CLI Codex Max par device code, brief de recherche guidé, persistance serveur, historique **brief → flux → exécution**, et panneau de **revue opérateur** persistante. L’opérateur peut préparer une connexion Codex dédiée à Volcano Fund sans exposer de token, choisir un modèle, modifier le responsable, modifier la liste de tickers, écrire une question de recherche, sauvegarder le brouillon côté backend, recharger les briefs récents depuis l’historique serveur, créer/ouvrir un vrai flux prérempli depuis ce brief, voir le statut flux/exécution lié, puis sauvegarder des notes de revue pour la dernière exécution.
 
 URL live :
 
@@ -17,6 +17,9 @@ La surface est volontairement positionnée comme un **cockpit de recherche d’i
 - Titre navigateur : `Volcano Fund`.
 - Écran d’accueil vide : branding Volcano Fund, statut, accès privé.
 - Textes de la surface Volcano Fund custom traduits en français : landing, brief, historique, revue opérateur, boutons et aides.
+- Panneau `Connexion Codex Max` : lance un device login Codex côté backend et affiche uniquement l’URL OpenAI + le code temporaire, jamais les tokens.
+- Backend route `GET /codex-auth/status`, `POST /codex-auth/device-login`, `DELETE /codex-auth/device-login`.
+- Le backend utilise un `CODEX_HOME` persistant sous `/app/data/codex-home` pour isoler l’auth Codex de Volcano Fund.
 - Les contrôles de top bar ajoutés pour Volcano Fund ont des libellés/accessibilité en français.
 - La landing contient des modèles de brief pour Raphaël et Alix, tickers éditables, responsable éditable, brouillon d’exécution et action `Créer et ouvrir le flux d’analyse`.
 - Les briefs de recherche sont persistés côté serveur via `POST/GET/PUT/DELETE /research-briefs/`.
@@ -34,6 +37,7 @@ Statut actuel :
 
 - Accès privé : Basic Auth Caddy.
 - Runtime : backend et UI gérés par Docker/Compose, état sain.
+- Codex Max : auth CLI dédiée à Volcano Fund possible par device code ; aucun token n’est retourné au frontend.
 - Santé : backend `GET /healthz`, UI `GET /healthz`.
 - Persistance briefs : table SQLite `volcano_research_briefs` + sauvegarde navigateur locale.
 - Persistance flux : stockage serveur existant `/flows/`.

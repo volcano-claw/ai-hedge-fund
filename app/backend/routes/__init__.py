@@ -10,6 +10,7 @@ from app.backend.routes.language_models import router as language_models_router
 from app.backend.routes.api_keys import router as api_keys_router
 from app.backend.routes.research_briefs import router as research_briefs_router
 from app.backend.routes.run_reviews import router as run_reviews_router
+from app.backend.routes.codex_auth import router as codex_auth_router
 
 # Main API router
 api_router = APIRouter()
@@ -25,3 +26,4 @@ api_router.include_router(language_models_router, tags=["language-models"])
 api_router.include_router(api_keys_router, tags=["api-keys"])
 api_router.include_router(research_briefs_router, tags=["research-briefs"])
 api_router.include_router(run_reviews_router, tags=["run-reviews"])
+api_router.include_router(codex_auth_router, tags=["codex-auth"])
