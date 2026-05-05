@@ -35,7 +35,7 @@ export function OutputTab({ className }: OutputTabProps) {
   const sortedAgents = sortAgents(Object.entries(agentData).filter(([agentId]) => agentId !== 'backtest'));
   
   return (
-    <div className={cn("h-full overflow-y-auto font-mono text-sm", className)}>
+    <div className={cn("h-full overflow-y-auto font-mono text-sm", className)} data-update-trigger={updateTrigger}>
       {/* Render backtest output if this is a backtest run */}
       {isBacktestRun && (
         <BacktestOutput agentData={agentData} outputData={outputData} />

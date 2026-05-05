@@ -42,7 +42,7 @@ export function OutputNodeStatus({
     displayText = idleText; // "Idle"
   }
 
-  const status = hasGradientAnimation ? 'IN_PROGRESS' : 'IDLE';
+  const status = hasGradientAnimation || isConnected ? 'IN_PROGRESS' : 'IDLE';
 
   return (
     <div 
