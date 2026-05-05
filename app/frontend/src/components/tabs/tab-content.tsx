@@ -36,7 +36,7 @@ const STORAGE_KEY = 'volcano-fund-research-brief-v1';
 const RESEARCH_TEMPLATES: ResearchTemplate[] = [
   {
     id: 'core-us-tech',
-    title: 'US tech quality check',
+    title: 'Contrôle qualité tech US',
     owner: 'Raphaël',
     tickers: 'MSFT,NVDA,AAPL,GOOGL,AMZN',
     brief: 'Comparer les grands dossiers tech US sur qualité fondamentale, momentum, valorisation et risques de concentration IA.',
@@ -50,7 +50,7 @@ const RESEARCH_TEMPLATES: ResearchTemplate[] = [
   },
   {
     id: 'macro-watch',
-    title: 'Macro watchlist',
+    title: 'Liste de suivi macro',
     owner: 'Raphaël + Alix',
     tickers: 'SPY,QQQ,TLT,GLD,USO',
     brief: 'Préparer une lecture macro multi-actifs: equity risk, duration, or, énergie, stress de marché et scénarios de couverture.',
@@ -101,7 +101,7 @@ function buildResearchFlowDraft(researchBrief: ResearchTemplate, normalizedTicke
       type: 'stock-analyzer-node',
       position: { x: 0, y: 0 },
       data: {
-        name: 'Stock Input',
+        name: 'Entrée titres',
         description: `Brief Volcano Fund · ${researchBrief.owner}`,
         status: 'Idle',
         internal_state: stockInternalState,
@@ -112,8 +112,8 @@ function buildResearchFlowDraft(researchBrief: ResearchTemplate, normalizedTicke
       type: 'agent-node',
       position: { x: 420, y: -260 },
       data: {
-        name: 'Technical Analyst',
-        description: 'Momentum, trend and market structure check.',
+        name: 'Analyste technique',
+        description: 'Contrôle du momentum, de la tendance et de la structure de marché.',
         status: 'Idle',
       },
     },
@@ -122,8 +122,8 @@ function buildResearchFlowDraft(researchBrief: ResearchTemplate, normalizedTicke
       type: 'agent-node',
       position: { x: 420, y: 0 },
       data: {
-        name: 'Fundamentals Analyst',
-        description: 'Quality, financials and business durability check.',
+        name: 'Analyste fondamental',
+        description: 'Contrôle de la qualité, des données financières et de la durabilité du modèle.',
         status: 'Idle',
       },
     },
@@ -132,8 +132,8 @@ function buildResearchFlowDraft(researchBrief: ResearchTemplate, normalizedTicke
       type: 'agent-node',
       position: { x: 420, y: 260 },
       data: {
-        name: 'Valuation Analyst',
-        description: 'Valuation and margin-of-safety check.',
+        name: 'Analyste valorisation',
+        description: 'Contrôle de valorisation et de marge de sécurité.',
         status: 'Idle',
       },
     },
@@ -142,8 +142,8 @@ function buildResearchFlowDraft(researchBrief: ResearchTemplate, normalizedTicke
       type: 'portfolio-manager-node',
       position: { x: 850, y: 0 },
       data: {
-        name: 'Portfolio Manager',
-        description: 'Synthesizes analyst signals into a research decision draft.',
+        name: 'Gérant de portefeuille',
+        description: 'Synthétise les signaux des analystes en brouillon de décision de recherche.',
         status: 'Idle',
       },
     },
@@ -159,8 +159,8 @@ function buildResearchFlowDraft(researchBrief: ResearchTemplate, normalizedTicke
   ];
 
   return {
-    name: `Volcano brief · ${researchBrief.title}`,
-    description: `Owner: ${researchBrief.owner}
+    name: `Brief Volcano · ${researchBrief.title}`,
+    description: `Responsable: ${researchBrief.owner}
 Tickers: ${tickers}
 Brief: ${researchBrief.brief}`,
     nodes,
@@ -218,7 +218,7 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
           setBriefSyncMessage(`Dernier brief serveur chargé #${latest.id}`);
         }
       } catch (error) {
-        console.error('Failed to load Volcano Fund research briefs:', error);
+        console.error('Échec du chargement des briefs de recherche Volcano Fund:', error);
         setBriefSyncMessage('Mode local: historique serveur indisponible');
       }
     };
@@ -280,7 +280,7 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
       setBriefSyncMessage(`Brief sauvegardé serveur #${savedBrief.id}`);
       await refreshBriefHistory();
     } catch (error) {
-      console.error('Failed to save Volcano Fund research brief:', error);
+      console.error('Échec de sauvegarde du brief de recherche Volcano Fund:', error);
       setCreateFlowError('Sauvegarde serveur impossible. Le brouillon local reste disponible.');
     } finally {
       setIsSavingBrief(false);
@@ -304,12 +304,12 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
 
   const runStatusLabel = (brief: ResearchBriefRecord) => {
     if (!brief.flow_id) {
-      return 'Aucun flow lié';
+      return 'Aucun flux lié';
     }
     if (!brief.run_count) {
-      return `Flow #${brief.flow_id} · aucun run`;
+      return `Flux #${brief.flow_id} · aucune exécution`;
     }
-    return `Flow #${brief.flow_id} · ${brief.run_count} run${brief.run_count > 1 ? 's' : ''} · ${brief.latest_run_status || 'status inconnu'}`;
+    return `Flux #${brief.flow_id} · ${brief.run_count} exécution${brief.run_count > 1 ? 's' : ''} · ${brief.latest_run_status || 'statut inconnu'}`;
   };
 
 
@@ -332,8 +332,8 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
         setReviewNotes(review.notes || '');
       }
     } catch (error) {
-      console.error('Failed to load run review:', error);
-      setReviewMessage('Review non chargée; création possible.');
+      console.error('Échec du chargement de la revue de l’exécution:', error);
+      setReviewMessage('Revue non chargée ; création possible.');
     }
   };
 
@@ -353,10 +353,10 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
         extra_metadata: { source: 'volcano-fund-landing-review-panel' },
       });
       await refreshBriefHistory();
-      setReviewMessage(`Review sauvegardée pour run #${selectedRunReview.runId}`);
+      setReviewMessage(`Revue sauvegardée pour l’exécution #${selectedRunReview.runId}`);
     } catch (error) {
-      console.error('Failed to save run review:', error);
-      setReviewMessage('Sauvegarde review impossible.');
+      console.error('Échec de sauvegarde de la revue de l’exécution:', error);
+      setReviewMessage('Sauvegarde de la revue impossible.');
     } finally {
       setIsSavingReview(false);
     }
@@ -393,11 +393,11 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
       const tabData = TabService.createFlowTab(createdFlow);
       openTab(tabData);
       window.localStorage.setItem('lastSelectedFlowId', createdFlow.id.toString());
-      setBriefSyncMessage(`Brief serveur #${linkedBrief.id} lié au flow #${createdFlow.id}`);
-      setCreatedFlowMessage(`Flow créé et ouvert: ${createdFlow.name}`);
+      setBriefSyncMessage(`Brief serveur #${linkedBrief.id} lié au flux #${createdFlow.id}`);
+      setCreatedFlowMessage(`Flux créé et ouvert : ${createdFlow.name}`);
     } catch (error) {
-      console.error('Failed to create Volcano Fund research flow:', error);
-      setCreateFlowError('Création du flow impossible. Vérifie le backend ou réessaie.');
+      console.error('Échec de création du flux de recherche Volcano Fund:', error);
+      setCreateFlowError('Création du flux impossible. Vérifie le backend ou réessaie.');
     } finally {
       setIsCreatingFlow(false);
     }
@@ -422,7 +422,7 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
               </div>
               <div>
                 <div className="text-sm font-medium uppercase tracking-[0.35em] text-orange-200/80">Volcano Fund</div>
-                <div className="text-xs text-stone-400">AI investment research cockpit</div>
+                <div className="text-xs text-stone-400">Cockpit de recherche d’investissement assisté par IA</div>
               </div>
             </div>
 
@@ -434,9 +434,9 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3 text-sm">
-              <span className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-stone-100">Basic Auth active</span>
-              <span className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-stone-100">Docker healthy</span>
-              <span className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-stone-100">GitHub fork synchronisé</span>
+              <span className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-stone-100">Authentification active</span>
+              <span className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-stone-100">Docker sain</span>
+              <span className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-stone-100">Fork GitHub synchronisé</span>
             </div>
           </section>
 
@@ -452,8 +452,8 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
             <div className="space-y-3">
               {[
                 ['Sécurité', 'Accès privé protégé au proxy'],
-                ['Recherche', 'Agents + flows prêts à être personnalisés'],
-                ['Runtime', 'Backend / UI surveillés par healthchecks'],
+                ['Recherche', 'Agents + flux prêts à personnaliser'],
+                ['Exécution', 'Backend / UI surveillés par contrôles santé'],
               ].map(([label, value]) => (
                 <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
                   <div className="text-xs uppercase tracking-[0.22em] text-orange-200/70">{label}</div>
@@ -469,11 +469,11 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
               </div>
               <div className="rounded-2xl bg-white/[0.06] p-3">
                 <BarChart3 className="mx-auto mb-2 text-orange-300" size={20} />
-                <div className="text-xs text-stone-300">Signals</div>
+                <div className="text-xs text-stone-300">Signaux</div>
               </div>
               <div className="rounded-2xl bg-white/[0.06] p-3">
                 <TrendingUp className="mx-auto mb-2 text-orange-300" size={20} />
-                <div className="text-xs text-stone-300">Research</div>
+                <div className="text-xs text-stone-300">Recherche</div>
               </div>
             </div>
           </aside>
@@ -486,10 +486,10 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
                 <ClipboardList size={16} />
                 Brief de recherche
               </div>
-              <p className="mt-1 text-sm text-stone-400">Prépare la question, la watchlist et le propriétaire avant d’ouvrir un flow.</p>
+              <p className="mt-1 text-sm text-stone-400">Prépare la question, la liste de suivi et le responsable avant d’ouvrir un flux d’analyse.</p>
             </div>
             <div className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs text-emerald-200">
-              Sauvegarde serveur + locale
+              Sauvegarde serveur + navigateur
             </div>
           </div>
 
@@ -506,14 +506,14 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
                   )}
                 >
                   <div className="text-sm font-semibold text-white">{template.title}</div>
-                  <div className="mt-1 text-xs text-stone-400">Owner: {template.owner}</div>
+                  <div className="mt-1 text-xs text-stone-400">Responsable : {template.owner}</div>
                   <div className="mt-2 text-xs text-orange-200/80">{template.tickers}</div>
                 </button>
               ))}
             </div>
 
             <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-              <label className="block text-xs uppercase tracking-[0.22em] text-stone-400" htmlFor="volcano-brief-owner">Owner</label>
+              <label className="block text-xs uppercase tracking-[0.22em] text-stone-400" htmlFor="volcano-brief-owner">Responsable</label>
               <input
                 id="volcano-brief-owner"
                 value={researchBrief.owner}
@@ -521,7 +521,7 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
                 className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none ring-orange-400/30 focus:ring-2"
               />
 
-              <label className="mt-4 block text-xs uppercase tracking-[0.22em] text-stone-400" htmlFor="volcano-brief-tickers">Tickers / watchlist</label>
+              <label className="mt-4 block text-xs uppercase tracking-[0.22em] text-stone-400" htmlFor="volcano-brief-tickers">Tickers / liste de suivi</label>
               <input
                 id="volcano-brief-tickers"
                 value={researchBrief.tickers}
@@ -543,7 +543,7 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
               />
 
               <div className="mt-4 rounded-xl border border-orange-300/20 bg-orange-300/10 p-3 text-sm text-orange-50">
-                <div className="mb-1 flex items-center gap-2 font-semibold"><Sparkles size={15} />Run draft</div>
+                <div className="mb-1 flex items-center gap-2 font-semibold"><Sparkles size={15} />Brouillon d’exécution</div>
                 <div className="text-stone-200">Analyser {normalizedTickers || 'la watchlist'} pour {researchBrief.owner || 'l’équipe'}: {researchBrief.brief}</div>
               </div>
 
@@ -564,7 +564,7 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
                 className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-500 to-amber-400 px-4 py-3 text-sm font-semibold text-black transition hover:from-red-400 hover:to-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isCreatingFlow ? <Loader2 className="animate-spin" size={16} /> : <FolderOpen size={16} />}
-                Créer et ouvrir le flow
+                Créer et ouvrir le flux d’analyse
               </button>
 
               {createdFlowMessage ? (
@@ -578,7 +578,7 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
 
           {briefHistory.length > 0 ? (
             <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-              <div className="mb-3 text-xs uppercase tracking-[0.22em] text-stone-400">Historique brief → flow → run</div>
+              <div className="mb-3 text-xs uppercase tracking-[0.22em] text-stone-400">Historique brief → flux → exécution</div>
               <div className="grid gap-3 md:grid-cols-3">
                 {briefHistory.slice(0, 3).map(brief => (
                   <button
@@ -608,7 +608,7 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
                         }}
                         className="mt-2 rounded-lg border border-emerald-400/20 bg-emerald-400/10 px-2 py-1 text-center text-xs text-emerald-100 hover:bg-emerald-400/20"
                       >
-                        Review run #{brief.latest_run_id}
+                        Revoir l’exécution #{brief.latest_run_id}
                       </div>
                     ) : null}
                   </button>
@@ -622,23 +622,23 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
             <div className="mt-5 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-4">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div>
-                  <div className="text-xs uppercase tracking-[0.22em] text-emerald-200">Review opérateur</div>
-                  <div className="mt-1 text-sm text-stone-200">Run #{selectedRunReview.runId} · Flow #{selectedRunReview.flowId} · {selectedRunReview.title}</div>
+                  <div className="text-xs uppercase tracking-[0.22em] text-emerald-200">Revue opérateur</div>
+                  <div className="mt-1 text-sm text-stone-200">Exécution #{selectedRunReview.runId} · Flux #{selectedRunReview.flowId} · {selectedRunReview.title}</div>
                 </div>
                 <button type="button" onClick={() => setSelectedRunReview(null)} className="text-xs text-stone-400 hover:text-white">Fermer</button>
               </div>
 
               <div className="grid gap-3 md:grid-cols-2">
                 <label className="text-xs uppercase tracking-[0.18em] text-stone-400">
-                  Statut review
+                  Statut de revue
                   <select
                     value={reviewStatus}
                     onChange={event => setReviewStatus(event.target.value)}
                     className="mt-2 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white outline-none"
                   >
-                    <option value="draft">draft</option>
-                    <option value="reviewed">reviewed</option>
-                    <option value="archived">archived</option>
+                    <option value="draft">brouillon</option>
+                    <option value="reviewed">reviewé</option>
+                    <option value="archived">archivé</option>
                   </select>
                 </label>
                 <label className="text-xs uppercase tracking-[0.18em] text-stone-400">
@@ -648,10 +648,10 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
                     onChange={event => setReviewDecision(event.target.value)}
                     className="mt-2 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white outline-none"
                   >
-                    <option value="watch">watch</option>
-                    <option value="investigate">investigate</option>
-                    <option value="reject">reject</option>
-                    <option value="archive">archive</option>
+                    <option value="watch">surveiller</option>
+                    <option value="investigate">approfondir</option>
+                    <option value="reject">rejeter</option>
+                    <option value="archive">archiver</option>
                   </select>
                 </label>
               </div>
@@ -674,7 +674,7 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
                 className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-400 px-4 py-3 text-sm font-semibold text-black transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isSavingReview ? <Loader2 className="animate-spin" size={16} /> : <FileText size={16} />}
-                Sauvegarder la review
+                Sauvegarder la revue
               </button>
               {reviewMessage ? (
                 <div className="mt-3 rounded-xl border border-white/10 bg-black/20 p-3 text-xs text-stone-100">{reviewMessage}</div>
@@ -685,7 +685,7 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
 
         <div className="mt-10 flex items-center gap-2 text-xs text-stone-500">
           <FileText size={14} />
-          <span>Crée un flow depuis le brief ou ouvre un flow existant depuis la barre latérale gauche. Usage recherche/éducation uniquement, pas de conseil financier.</span>
+          <span>Crée un flux depuis le brief ou ouvre un flux existant depuis la barre latérale gauche. Usage recherche/éducation uniquement, pas de conseil financier.</span>
         </div>
       </div>
     </div>
@@ -718,7 +718,7 @@ export function TabContent({ className }: TabContentProps) {
           metadata: restoredTab.metadata,
         });
       } catch (error) {
-        console.error('Failed to restore tab content:', error);
+        console.error('Échec de restauration du contenu de l’onglet:', error);
       }
     }
   }, [activeTab, openTab]);
@@ -736,7 +736,7 @@ export function TabContent({ className }: TabContentProps) {
       )}>
         <div className="text-center">
           <FolderOpen size={32} className="mx-auto mb-3 text-muted-foreground/50" />
-          <div className="text-lg font-medium mb-2">Loading {activeTab.title}...</div>
+          <div className="text-lg font-medium mb-2">Chargement de {activeTab.title}...</div>
         </div>
       </div>
     );

@@ -38,8 +38,8 @@ export function TopBar({
             "h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-ramp-grey-700 transition-colors",
             !isLeftCollapsed && "text-foreground"
           )}
-          aria-label="Toggle left sidebar"
-          title="Toggle Left Side Bar (⌘B)"
+          aria-label="Afficher/masquer la barre latérale gauche"
+          title="Afficher/masquer la barre latérale gauche (⌘B)"
         >
           <PanelLeft size={16} />
         </Button>
@@ -53,8 +53,8 @@ export function TopBar({
             "h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-ramp-grey-700 transition-colors",
             !isBottomCollapsed && "text-foreground"
           )}
-          aria-label="Toggle bottom panel"
-          title="Toggle Bottom Panel (⌘J)"
+          aria-label="Afficher/masquer le panneau inférieur"
+          title="Afficher/masquer le panneau inférieur (⌘J)"
         >
           <PanelBottom size={16} />
         </Button>
@@ -68,8 +68,8 @@ export function TopBar({
             "h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-ramp-grey-700 transition-colors",
             !isRightCollapsed && "text-foreground"
           )}
-          aria-label="Toggle right sidebar"
-          title="Toggle Right Side Bar (⌘I)"
+          aria-label="Afficher/masquer la barre latérale droite"
+          title="Afficher/masquer la barre latérale droite (⌘I)"
         >
           <PanelRight size={16} />
         </Button>
@@ -83,8 +83,8 @@ export function TopBar({
           size="sm"
           onClick={onSettingsClick}
           className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-ramp-grey-700 transition-colors"
-          aria-label="Open settings"
-          title="Open Settings (⌘,)"
+          aria-label="Ouvrir les paramètres"
+          title="Ouvrir les paramètres (⌘,)"
         >
           <Settings size={16} />
         </Button>

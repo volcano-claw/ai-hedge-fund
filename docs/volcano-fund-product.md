@@ -1,53 +1,54 @@
-# Volcano Fund product surface
+# Surface produit Volcano Fund
 
-## Current live slice
+## Tranche live actuelle
 
-Volcano Fund has a branded private landing surface on top of the existing AI Hedge Fund workflow UI.
+Volcano Fund dispose d’une landing privée brandée au-dessus de l’interface de workflows existante d’AI Hedge Fund.
 
-The landing includes a guided research brief panel with **server-side persistence**, a lightweight **brief → flow → run history** view, and a persistent **operator run review** panel. It lets the operator choose a template, edit the owner, edit the ticker watchlist, write a research question, save the draft to the backend, reload recent briefs from server history, create/open a real workflow tab seeded from that brief, see linked flow/run status, and save review notes for the latest run.
+La landing inclut maintenant une interface Volcano Fund en français : brief de recherche guidé, persistance serveur, historique **brief → flux → exécution**, et panneau de **revue opérateur** persistante. L’opérateur peut choisir un modèle, modifier le responsable, modifier la liste de tickers, écrire une question de recherche, sauvegarder le brouillon côté backend, recharger les briefs récents depuis l’historique serveur, créer/ouvrir un vrai flux prérempli depuis ce brief, voir le statut flux/exécution lié, puis sauvegarder des notes de revue pour la dernière exécution.
 
-Live URL:
+URL live :
 
 - `https://volcanofund.heiries.fr`
 
-The surface is intentionally positioned as an **AI investment research cockpit** for Raphaël and Alix, not as a trading or investment-advice product.
+La surface est volontairement positionnée comme un **cockpit de recherche d’investissement assisté par IA** pour Raphaël et Alix, pas comme un produit de trading ou de conseil financier.
 
-## What changed
+## Ce qui a changé
 
-- Browser title changed from `AI Hedge Fund` to `Volcano Fund`.
-- Empty workspace welcome screen presents Volcano Fund branding, status, and private-access framing.
-- Landing screen includes research brief templates for Raphaël and Alix, editable tickers, editable owner, a generated run draft, and a `Créer et ouvrir le flow` action.
-- Research briefs are persisted server-side through `POST/GET/PUT/DELETE /research-briefs/`.
-- Enriched history endpoint `GET /research-briefs/history/` returns each recent brief with linked `flow_name`, `run_count`, `latest_run_id`, `latest_run_status`, latest run timestamp, and review summary when available.
-- Operator run reviews are persisted server-side through `GET/PUT/DELETE /run-reviews/{run_id}` in table `volcano_run_reviews`.
-- The brief panel loads recent server history, can restore a recent brief into the form, displays linked flow/run status, and opens a review panel for the latest run.
-- The run review panel stores `review_status`, `decision`, `reviewer`, and free-form notes.
-- The create/open action saves or updates the server brief, creates a real flow through `/flows/`, then links the brief to the generated `flow_id` with status `flow_created`.
-- Generated flows include a seeded Stock Input node, analyst nodes, Portfolio Manager node, edges, tags, and brief metadata.
-- Top bar shows a compact Volcano Fund mark.
-- Existing flow workspace, sidebars, tabs, settings, backend API, and runtime ports remain unchanged.
+- Titre navigateur : `Volcano Fund`.
+- Écran d’accueil vide : branding Volcano Fund, statut, accès privé.
+- Textes de la surface Volcano Fund custom traduits en français : landing, brief, historique, revue opérateur, boutons et aides.
+- Les contrôles de top bar ajoutés pour Volcano Fund ont des libellés/accessibilité en français.
+- La landing contient des modèles de brief pour Raphaël et Alix, tickers éditables, responsable éditable, brouillon d’exécution et action `Créer et ouvrir le flux d’analyse`.
+- Les briefs de recherche sont persistés côté serveur via `POST/GET/PUT/DELETE /research-briefs/`.
+- L’endpoint enrichi `GET /research-briefs/history/` retourne chaque brief récent avec `flow_name`, `run_count`, `latest_run_id`, `latest_run_status`, timestamp de dernière exécution, et résumé de revue si disponible.
+- Les revues opérateur des exécutions sont persistées via `GET/PUT/DELETE /run-reviews/{run_id}` dans la table `volcano_run_reviews`.
+- Le panneau de brief charge l’historique serveur récent, peut restaurer un brief récent dans le formulaire, affiche le statut flux/exécution lié, et ouvre un panneau de revue pour la dernière exécution.
+- Le panneau de revue stocke `review_status`, `decision`, `reviewer` et notes libres.
+- L’action de création/ouverture sauvegarde ou met à jour le brief serveur, crée un vrai flow via `/flows/`, puis lie le brief au `flow_id` généré avec le statut `flow_created`.
+- Les flux générés incluent un nœud d’entrée titres, des nœuds analystes, un gérant de portefeuille, des connexions, tags et métadonnées du brief.
+- L’espace workflows existant, les sidebars, onglets, paramètres, API backend et ports runtime restent inchangés.
 
-## Product truth
+## Vérité produit
 
-Current status:
+Statut actuel :
 
-- Private access: Caddy Basic Auth.
-- Runtime: backend and UI are Docker/Compose managed and healthy.
-- Health: backend exposes `GET /healthz`; UI exposes `GET /healthz`.
-- Brief persistence: server-side SQLite table `volcano_research_briefs` plus local browser backup.
-- Flow persistence: existing server-side `/flows/` storage.
-- Run status: read-only aggregation from existing `/flows/{flow_id}/runs` data.
-- Run review: operator notes/status persisted in `volcano_run_reviews`; this is human review metadata, not automated financial advice.
-- Trading: no real trading execution is enabled.
+- Accès privé : Basic Auth Caddy.
+- Runtime : backend et UI gérés par Docker/Compose, état sain.
+- Santé : backend `GET /healthz`, UI `GET /healthz`.
+- Persistance briefs : table SQLite `volcano_research_briefs` + sauvegarde navigateur locale.
+- Persistance flux : stockage serveur existant `/flows/`.
+- Statut exécutions : agrégation en lecture seule depuis les données existantes `/flows/{flow_id}/runs`.
+- Revue exécution : notes/statuts opérateur persistés dans `volcano_run_reviews`; c’est une métadonnée de revue humaine, pas du conseil financier automatisé.
+- Trading : aucune exécution réelle de trading n’est activée.
 
-This is still a research/education cockpit. A future application-auth slice may add real in-app users, roles, sessions, and audit trails.
+Cette tranche francise la surface Volcano Fund que nous avons ajoutée dans le fork. L’UI upstream d’origine contient encore des écrans anglais hors de cette surface ; ils pourront être francisés progressivement ou via une vraie internationalisation `fr/en`.
 
-## Next recommended slice
+## Prochaine tranche recommandée
 
-Build the next Volcano Fund results-review slice:
+Construire la tranche “détail de run” Volcano Fund :
 
-1. surface analyst outputs/results summary per run,
-2. add a dedicated run detail/review drawer instead of only the landing panel,
-3. add before/after decision snapshots for reviewed runs,
-4. add editable analyst presets per brief template,
-5. then app-level auth if multi-user usage becomes important.
+1. afficher les sorties/résumés des analystes par exécution,
+2. ajouter un tiroir dédié détail + revue d’exécution,
+3. ajouter des snapshots avant/après décision pour les exécutions revues,
+4. ajouter des presets analystes éditables par modèle de brief,
+5. puis passer à une vraie auth applicative si l’usage multi-utilisateur devient important.
