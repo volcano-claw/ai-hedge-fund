@@ -14,22 +14,29 @@ from src.graph.state import AgentState
 
 def extract_base_agent_key(unique_id: str) -> str:
     """
-    Extract the base agent key from a unique node ID.
-    
-    Args:
-        unique_id: The unique node ID with suffix (e.g., "warren_buffett_abc123")
-    
-    Returns:
-        The base agent key (e.g., "warren_buffett")
+    Extract the configured base agent key from a unique React Flow node ID.
+
+    Volcano Fund generated flow IDs use a Date.now().toString(36) suffix whose
+    length is not stable (for example: ``technical_analyst_mot55ml1``).  The
+    upstream implementation only stripped 6-character suffixes, which made new
+    generated Volcano flows invisible to the backend graph builder.
     """
-    # For agent nodes, remove the last underscore and 6-character suffix
+    known_agent_keys = sorted(
+        [*ANALYST_CONFIG.keys(), "portfolio_manager"],
+        key=len,
+        reverse=True,
+    )
+    for agent_key in known_agent_keys:
+        if unique_id == agent_key or unique_id.startswith(f"{agent_key}_"):
+            return agent_key
+
+    # Backward-compatible fallback for old generic IDs with a short suffix.
     parts = unique_id.split('_')
     if len(parts) >= 2:
         last_part = parts[-1]
-        # If the last part is a 6-character alphanumeric string, it's likely our suffix
-        if len(last_part) == 6 and re.match(r'^[a-z0-9]+$', last_part):
+        if len(last_part) >= 6 and re.match(r'^[a-z0-9]+$', last_part):
             return '_'.join(parts[:-1])
-    return unique_id  # Return original if no suffix pattern found
+    return unique_id
 
 
 # Helper function to create the agent graph
