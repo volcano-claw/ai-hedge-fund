@@ -16,7 +16,7 @@ interface FlowTabContentProps {
 
 export function FlowTabContent({ flow, className }: FlowTabContentProps) {
   const { loadFlow } = useFlowContext();
-  const { activeTabId } = useTabsContext();
+  const { activeTabId, openTab, closeTab } = useTabsContext();
 
   // Enhanced load function that restores both use-node-state and node context data
   const loadFlowWithCompleteState = async (flowToLoad: FlowType) => {
@@ -36,7 +36,7 @@ export function FlowTabContent({ flow, className }: FlowTabContentProps) {
 
       // Then restore internal states for each node (use-node-state data)
       if (flowToLoad.nodes) {
-        flowToLoad.nodes.forEach((node: any) => {
+        flowToLoad.nodes.forEach((node: { id: string; data?: { internal_state?: unknown } }) => {
           if (node.data?.internal_state) {
             setNodeInternalState(node.id, node.data.internal_state);
           }
@@ -65,6 +65,40 @@ export function FlowTabContent({ flow, className }: FlowTabContentProps) {
           await loadFlowWithCompleteState(latestFlow);
         } catch (error) {
           console.error('Failed to fetch latest flow state:', error);
+
+          const status = (error as { status?: number } | undefined)?.status;
+          if (status === 404) {
+            try {
+              console.warn(`[FlowTabContent] Flow ${flow.id} is missing on the server; recreating it from cached tab state.`);
+              const recreatedFlow = await flowService.createFlow({
+                name: flow.name,
+                description: flow.description,
+                nodes: flow.nodes,
+                edges: flow.edges,
+                viewport: flow.viewport,
+                data: {
+                  ...(flow.data || {}),
+                  recovered_from_missing_flow_id: flow.id,
+                },
+                is_template: flow.is_template,
+                tags: flow.tags,
+              });
+
+              await loadFlowWithCompleteState(recreatedFlow);
+              openTab({
+                type: 'flow',
+                title: recreatedFlow.name,
+                flow: recreatedFlow,
+                content: <FlowTabContent flow={recreatedFlow} />,
+              });
+              closeTab(`flow-${flow.id}`);
+              window.localStorage.setItem('lastSelectedFlowId', recreatedFlow.id.toString());
+              return;
+            } catch (recoveryError) {
+              console.error('Failed to recreate missing flow from cached tab state:', recoveryError);
+            }
+          }
+
           // Fallback to loading the cached flow data with complete state restoration
           await loadFlowWithCompleteState(flow);
         }
@@ -72,7 +106,10 @@ export function FlowTabContent({ flow, className }: FlowTabContentProps) {
 
       fetchAndLoadFlow();
     }
-  }, [activeTabId, flow.id, flow, loadFlow]);
+    // loadFlowWithCompleteState is intentionally kept local to this effect path:
+    // adding it as a dependency would reload/recover the same flow repeatedly.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTabId, flow.id, flow, loadFlow, openTab, closeTab]);
 
   return (
     <div className={cn("h-full w-full", className)}>

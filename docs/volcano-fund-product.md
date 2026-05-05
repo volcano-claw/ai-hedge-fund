@@ -23,6 +23,7 @@ La surface est volontairement positionnée comme un **cockpit de recherche d’i
 - Modèle par défaut Volcano Fund : les flux créés depuis un brief pré-sélectionnent Codex CLI `gpt-5.4` pour les analystes et le gérant ; le backend garde le même fallback serveur pour éviter un lancement `/hedge-fund/run` sans modèle.
 - Backend route `GET /codex-auth/status`, `POST /codex-auth/device-login`, `DELETE /codex-auth/device-login`.
 - Le backend utilise un `CODEX_HOME` persistant sous `/app/data/codex-home` pour isoler l’auth Codex de Volcano Fund.
+- Les données applicatives backend (flows, briefs, reviews) sont stockées dans `/app/data/hedge_fund.db`, monté depuis `data/`, afin de survivre aux rebuilds/restarts Docker.
 - Les contrôles de top bar ajoutés pour Volcano Fund ont des libellés/accessibilité en français.
 - La landing contient des modèles de brief pour Raphaël et Alix, tickers éditables, responsable éditable, brouillon d’exécution et action `Créer et ouvrir le flux d’analyse`.
 - Les briefs de recherche sont persistés côté serveur via `POST/GET/PUT/DELETE /research-briefs/`.

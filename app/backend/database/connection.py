@@ -4,11 +4,12 @@ from sqlalchemy.orm import sessionmaker
 import os
 from pathlib import Path
 
-# Get the backend directory path
-BACKEND_DIR = Path(__file__).parent.parent
-DATABASE_PATH = BACKEND_DIR / "hedge_fund.db"
-
-# Database configuration - use absolute path
+# Database configuration - use a persistent path when running in Docker.
+# The Volcano Fund Compose service mounts /app/data so flows, briefs and reviews
+# survive backend image rebuilds/recreates.
+DEFAULT_DATABASE_PATH = Path("/app/data/hedge_fund.db") if Path("/app/data").exists() else Path(__file__).parent.parent / "hedge_fund.db"
+DATABASE_PATH = Path(os.getenv("VOLCANO_DATABASE_PATH", str(DEFAULT_DATABASE_PATH)))
+DATABASE_PATH.parent.mkdir(parents=True, exist_ok=True)
 DATABASE_URL = f"sqlite:///{DATABASE_PATH}"
 
 # Create SQLAlchemy engine
