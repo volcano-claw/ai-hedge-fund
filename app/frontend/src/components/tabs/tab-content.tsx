@@ -1,5 +1,6 @@
 import { useTabsContext } from '@/contexts/tabs-context';
 import { cn } from '@/lib/utils';
+import { flowService } from '@/services/flow-service';
 import { TabService } from '@/services/tab-service';
 import {
   BarChart3,
@@ -9,6 +10,7 @@ import {
   FolderOpen,
   LockKeyhole,
   ShieldCheck,
+  Loader2,
   Sparkles,
   TrendingUp,
 } from 'lucide-react';
@@ -69,8 +71,118 @@ function loadBriefState() {
   }
 }
 
+function buildResearchFlowDraft(researchBrief: ResearchTemplate, normalizedTickers: string) {
+  const today = new Date();
+  const threeMonthsAgo = new Date(today);
+  threeMonthsAgo.setMonth(today.getMonth() - 3);
+  const startDate = threeMonthsAgo.toISOString().split('T')[0];
+  const endDate = today.toISOString().split('T')[0];
+  const safeSuffix = Date.now().toString(36);
+  const tickers = normalizedTickers || researchBrief.tickers;
+  const stockNodeId = `volcano_stock_input_${safeSuffix}`;
+  const technicalNodeId = `technical_analyst_${safeSuffix}`;
+  const fundamentalsNodeId = `fundamentals_analyst_${safeSuffix}`;
+  const valuationNodeId = `valuation_analyst_${safeSuffix}`;
+  const portfolioNodeId = `portfolio_manager_${safeSuffix}`;
+  const stockInternalState = {
+    tickers,
+    runMode: 'single',
+    initialCash: '100000',
+    startDate,
+    endDate,
+  };
+
+  const nodes = [
+    {
+      id: stockNodeId,
+      type: 'stock-analyzer-node',
+      position: { x: 0, y: 0 },
+      data: {
+        name: 'Stock Input',
+        description: `Brief Volcano Fund · ${researchBrief.owner}`,
+        status: 'Idle',
+        internal_state: stockInternalState,
+      },
+    },
+    {
+      id: technicalNodeId,
+      type: 'agent-node',
+      position: { x: 420, y: -260 },
+      data: {
+        name: 'Technical Analyst',
+        description: 'Momentum, trend and market structure check.',
+        status: 'Idle',
+      },
+    },
+    {
+      id: fundamentalsNodeId,
+      type: 'agent-node',
+      position: { x: 420, y: 0 },
+      data: {
+        name: 'Fundamentals Analyst',
+        description: 'Quality, financials and business durability check.',
+        status: 'Idle',
+      },
+    },
+    {
+      id: valuationNodeId,
+      type: 'agent-node',
+      position: { x: 420, y: 260 },
+      data: {
+        name: 'Valuation Analyst',
+        description: 'Valuation and margin-of-safety check.',
+        status: 'Idle',
+      },
+    },
+    {
+      id: portfolioNodeId,
+      type: 'portfolio-manager-node',
+      position: { x: 850, y: 0 },
+      data: {
+        name: 'Portfolio Manager',
+        description: 'Synthesizes analyst signals into a research decision draft.',
+        status: 'Idle',
+      },
+    },
+  ];
+
+  const edges = [
+    { id: `${stockNodeId}-${technicalNodeId}`, source: stockNodeId, target: technicalNodeId },
+    { id: `${stockNodeId}-${fundamentalsNodeId}`, source: stockNodeId, target: fundamentalsNodeId },
+    { id: `${stockNodeId}-${valuationNodeId}`, source: stockNodeId, target: valuationNodeId },
+    { id: `${technicalNodeId}-${portfolioNodeId}`, source: technicalNodeId, target: portfolioNodeId },
+    { id: `${fundamentalsNodeId}-${portfolioNodeId}`, source: fundamentalsNodeId, target: portfolioNodeId },
+    { id: `${valuationNodeId}-${portfolioNodeId}`, source: valuationNodeId, target: portfolioNodeId },
+  ];
+
+  return {
+    name: `Volcano brief · ${researchBrief.title}`,
+    description: `Owner: ${researchBrief.owner}
+Tickers: ${tickers}
+Brief: ${researchBrief.brief}`,
+    nodes,
+    edges,
+    viewport: { x: 80, y: 140, zoom: 0.75 },
+    data: {
+      source: 'volcano-fund-research-brief',
+      researchBrief: {
+        ...researchBrief,
+        tickers,
+      },
+      nodeStates: {
+        [stockNodeId]: stockInternalState,
+      },
+    },
+    tags: ['volcano-fund', 'research-brief', researchBrief.owner.toLowerCase().replace(/[^a-z0-9]+/g, '-')],
+  };
+}
+
 function VolcanoFundWelcome({ className }: TabContentProps) {
+  const { openTab } = useTabsContext();
   const [researchBrief, setResearchBrief] = useState<ResearchTemplate>(() => loadBriefState());
+  const [isCreatingFlow, setIsCreatingFlow] = useState(false);
+  const [createdFlowMessage, setCreatedFlowMessage] = useState<string | null>(null);
+  const [createFlowError, setCreateFlowError] = useState<string | null>(null);
 
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(researchBrief));
@@ -86,6 +198,28 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
 
   const applyTemplate = (template: ResearchTemplate) => {
     setResearchBrief(template);
+    setCreatedFlowMessage(null);
+    setCreateFlowError(null);
+  };
+
+  const createFlowFromBrief = async () => {
+    setIsCreatingFlow(true);
+    setCreatedFlowMessage(null);
+    setCreateFlowError(null);
+
+    try {
+      const flowDraft = buildResearchFlowDraft(researchBrief, normalizedTickers);
+      const createdFlow = await flowService.createFlow(flowDraft);
+      const tabData = TabService.createFlowTab(createdFlow);
+      openTab(tabData);
+      window.localStorage.setItem('lastSelectedFlowId', createdFlow.id.toString());
+      setCreatedFlowMessage(`Flow créé et ouvert: ${createdFlow.name}`);
+    } catch (error) {
+      console.error('Failed to create Volcano Fund research flow:', error);
+      setCreateFlowError('Création du flow impossible. Vérifie le backend ou réessaie.');
+    } finally {
+      setIsCreatingFlow(false);
+    }
   };
 
   return (
@@ -227,13 +361,30 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
                 <div className="mb-1 flex items-center gap-2 font-semibold"><Sparkles size={15} />Run draft</div>
                 <div className="text-stone-200">Analyser {normalizedTickers || 'la watchlist'} pour {researchBrief.owner || 'l’équipe'}: {researchBrief.brief}</div>
               </div>
+
+              <button
+                type="button"
+                onClick={createFlowFromBrief}
+                disabled={isCreatingFlow || !normalizedTickers || !researchBrief.brief.trim()}
+                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-500 to-amber-400 px-4 py-3 text-sm font-semibold text-black transition hover:from-red-400 hover:to-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isCreatingFlow ? <Loader2 className="animate-spin" size={16} /> : <FolderOpen size={16} />}
+                Créer et ouvrir le flow
+              </button>
+
+              {createdFlowMessage ? (
+                <div className="mt-3 rounded-xl border border-emerald-400/20 bg-emerald-400/10 p-3 text-xs text-emerald-100">{createdFlowMessage}</div>
+              ) : null}
+              {createFlowError ? (
+                <div className="mt-3 rounded-xl border border-red-400/20 bg-red-400/10 p-3 text-xs text-red-100">{createFlowError}</div>
+              ) : null}
             </div>
           </div>
         </section>
 
         <div className="mt-10 flex items-center gap-2 text-xs text-stone-500">
           <FileText size={14} />
-          <span>Ouvre un flow depuis la barre latérale gauche pour lancer l’espace de travail. Usage recherche/éducation uniquement, pas de conseil financier.</span>
+          <span>Crée un flow depuis le brief ou ouvre un flow existant depuis la barre latérale gauche. Usage recherche/éducation uniquement, pas de conseil financier.</span>
         </div>
       </div>
     </div>
