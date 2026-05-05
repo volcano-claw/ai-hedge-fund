@@ -289,3 +289,39 @@ class ApiKeySummaryResponse(BaseModel):
 class ApiKeyBulkUpdateRequest(BaseModel):
     """Request to update multiple API keys at once"""
     api_keys: List[ApiKeyCreateRequest]
+
+# Volcano Fund research brief schemas
+class ResearchBriefBase(BaseModel):
+    title: str = Field(..., min_length=1, max_length=200)
+    owner: str = Field(..., min_length=1, max_length=120)
+    tickers: str = Field(..., min_length=1)
+    brief: str = Field(..., min_length=1)
+    template_id: Optional[str] = Field(None, max_length=120)
+    status: str = Field(default="draft", max_length=50)
+    flow_id: Optional[int] = None
+    extra_metadata: Optional[Dict[str, Any]] = None
+
+
+class ResearchBriefCreateRequest(ResearchBriefBase):
+    pass
+
+
+class ResearchBriefUpdateRequest(BaseModel):
+    title: Optional[str] = Field(None, min_length=1, max_length=200)
+    owner: Optional[str] = Field(None, min_length=1, max_length=120)
+    tickers: Optional[str] = Field(None, min_length=1)
+    brief: Optional[str] = Field(None, min_length=1)
+    template_id: Optional[str] = Field(None, max_length=120)
+    status: Optional[str] = Field(None, max_length=50)
+    flow_id: Optional[int] = None
+    extra_metadata: Optional[Dict[str, Any]] = None
+
+
+class ResearchBriefResponse(ResearchBriefBase):
+    id: int
+    created_at: datetime
+    updated_at: Optional[datetime]
+
+    class Config:
+        from_attributes = True
+

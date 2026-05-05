@@ -111,5 +111,20 @@ class ApiKey(Base):
     description = Column(Text, nullable=True)  # Human-readable description
     last_used = Column(DateTime(timezone=True), nullable=True)  # Track usage
 
+class VolcanoResearchBrief(Base):
+    """Persistent Volcano Fund research brief drafts and history."""
+    __tablename__ = "volcano_research_briefs"
 
- 
+    id = Column(Integer, primary_key=True, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    title = Column(String(200), nullable=False)
+    owner = Column(String(120), nullable=False)
+    tickers = Column(Text, nullable=False)
+    brief = Column(Text, nullable=False)
+    template_id = Column(String(120), nullable=True)
+    status = Column(String(50), nullable=False, default="draft")
+    flow_id = Column(Integer, ForeignKey("hedge_fund_flows.id"), nullable=True, index=True)
+    extra_metadata = Column(JSON, nullable=True)
+

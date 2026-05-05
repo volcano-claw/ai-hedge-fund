@@ -1,6 +1,7 @@
 import { useTabsContext } from '@/contexts/tabs-context';
 import { cn } from '@/lib/utils';
 import { flowService } from '@/services/flow-service';
+import { researchBriefService, type ResearchBriefRecord } from '@/services/research-brief-service';
 import { TabService } from '@/services/tab-service';
 import {
   BarChart3,
@@ -26,6 +27,7 @@ type ResearchTemplate = {
   owner: string;
   tickers: string;
   brief: string;
+  serverId?: number;
 };
 
 const STORAGE_KEY = 'volcano-fund-research-brief-v1';
@@ -181,12 +183,41 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
   const { openTab } = useTabsContext();
   const [researchBrief, setResearchBrief] = useState<ResearchTemplate>(() => loadBriefState());
   const [isCreatingFlow, setIsCreatingFlow] = useState(false);
+  const [isSavingBrief, setIsSavingBrief] = useState(false);
+  const [briefHistory, setBriefHistory] = useState<ResearchBriefRecord[]>([]);
   const [createdFlowMessage, setCreatedFlowMessage] = useState<string | null>(null);
   const [createFlowError, setCreateFlowError] = useState<string | null>(null);
+  const [briefSyncMessage, setBriefSyncMessage] = useState<string | null>(null);
 
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(researchBrief));
   }, [researchBrief]);
+
+  useEffect(() => {
+    const loadBriefHistory = async () => {
+      try {
+        const briefs = await researchBriefService.listBriefs(6);
+        setBriefHistory(briefs);
+        if (briefs.length > 0) {
+          const latest = briefs[0];
+          setResearchBrief({
+            id: latest.template_id || 'server-brief',
+            title: latest.title,
+            owner: latest.owner,
+            tickers: latest.tickers,
+            brief: latest.brief,
+            serverId: latest.id,
+          });
+          setBriefSyncMessage(`Dernier brief serveur chargé #${latest.id}`);
+        }
+      } catch (error) {
+        console.error('Failed to load Volcano Fund research briefs:', error);
+        setBriefSyncMessage('Mode local: historique serveur indisponible');
+      }
+    };
+
+    loadBriefHistory();
+  }, []);
 
   const normalizedTickers = useMemo(() => (
     researchBrief.tickers
@@ -200,6 +231,67 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
     setResearchBrief(template);
     setCreatedFlowMessage(null);
     setCreateFlowError(null);
+    setBriefSyncMessage(null);
+  };
+
+  const briefPayload = (status = 'draft', flowId?: number) => ({
+    title: researchBrief.title,
+    owner: researchBrief.owner,
+    tickers: normalizedTickers || researchBrief.tickers,
+    brief: researchBrief.brief,
+    template_id: researchBrief.id,
+    status,
+    flow_id: flowId ?? null,
+    extra_metadata: {
+      source: 'volcano-fund-landing',
+      savedFrom: 'research-brief-panel',
+    },
+  });
+
+  const refreshBriefHistory = async () => {
+    const briefs = await researchBriefService.listBriefs(6);
+    setBriefHistory(briefs);
+  };
+
+  const saveBriefDraft = async () => {
+    setIsSavingBrief(true);
+    setCreateFlowError(null);
+
+    try {
+      const savedBrief = researchBrief.serverId
+        ? await researchBriefService.updateBrief(researchBrief.serverId, briefPayload('draft'))
+        : await researchBriefService.createBrief(briefPayload('draft'));
+
+      setResearchBrief({
+        id: savedBrief.template_id || researchBrief.id,
+        title: savedBrief.title,
+        owner: savedBrief.owner,
+        tickers: savedBrief.tickers,
+        brief: savedBrief.brief,
+        serverId: savedBrief.id,
+      });
+      setBriefSyncMessage(`Brief sauvegardé serveur #${savedBrief.id}`);
+      await refreshBriefHistory();
+    } catch (error) {
+      console.error('Failed to save Volcano Fund research brief:', error);
+      setCreateFlowError('Sauvegarde serveur impossible. Le brouillon local reste disponible.');
+    } finally {
+      setIsSavingBrief(false);
+    }
+  };
+
+  const loadHistoryBrief = (brief: ResearchBriefRecord) => {
+    setResearchBrief({
+      id: brief.template_id || 'server-brief',
+      title: brief.title,
+      owner: brief.owner,
+      tickers: brief.tickers,
+      brief: brief.brief,
+      serverId: brief.id,
+    });
+    setBriefSyncMessage(`Brief serveur chargé #${brief.id}`);
+    setCreatedFlowMessage(null);
+    setCreateFlowError(null);
   };
 
   const createFlowFromBrief = async () => {
@@ -208,11 +300,32 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
     setCreateFlowError(null);
 
     try {
-      const flowDraft = buildResearchFlowDraft(researchBrief, normalizedTickers);
+      const savedBrief = researchBrief.serverId
+        ? await researchBriefService.updateBrief(researchBrief.serverId, briefPayload('draft'))
+        : await researchBriefService.createBrief(briefPayload('draft'));
+      const flowDraft = buildResearchFlowDraft({
+        id: savedBrief.template_id || researchBrief.id,
+        title: savedBrief.title,
+        owner: savedBrief.owner,
+        tickers: savedBrief.tickers,
+        brief: savedBrief.brief,
+        serverId: savedBrief.id,
+      }, normalizedTickers);
       const createdFlow = await flowService.createFlow(flowDraft);
+      const linkedBrief = await researchBriefService.updateBrief(savedBrief.id, briefPayload('flow_created', createdFlow.id));
+      setResearchBrief({
+        id: linkedBrief.template_id || researchBrief.id,
+        title: linkedBrief.title,
+        owner: linkedBrief.owner,
+        tickers: linkedBrief.tickers,
+        brief: linkedBrief.brief,
+        serverId: linkedBrief.id,
+      });
+      await refreshBriefHistory();
       const tabData = TabService.createFlowTab(createdFlow);
       openTab(tabData);
       window.localStorage.setItem('lastSelectedFlowId', createdFlow.id.toString());
+      setBriefSyncMessage(`Brief serveur #${linkedBrief.id} lié au flow #${createdFlow.id}`);
       setCreatedFlowMessage(`Flow créé et ouvert: ${createdFlow.name}`);
     } catch (error) {
       console.error('Failed to create Volcano Fund research flow:', error);
@@ -308,7 +421,7 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
               <p className="mt-1 text-sm text-stone-400">Prépare la question, la watchlist et le propriétaire avant d’ouvrir un flow.</p>
             </div>
             <div className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs text-emerald-200">
-              Sauvegarde locale active
+              Sauvegarde serveur + locale
             </div>
           </div>
 
@@ -348,6 +461,10 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
                 className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none ring-orange-400/30 focus:ring-2"
               />
 
+              {briefSyncMessage ? (
+                <div className="mt-3 rounded-xl border border-sky-400/20 bg-sky-400/10 p-3 text-xs text-sky-100">{briefSyncMessage}</div>
+              ) : null}
+
               <label className="mt-4 block text-xs uppercase tracking-[0.22em] text-stone-400" htmlFor="volcano-brief-text">Question de recherche</label>
               <textarea
                 id="volcano-brief-text"
@@ -361,6 +478,16 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
                 <div className="mb-1 flex items-center gap-2 font-semibold"><Sparkles size={15} />Run draft</div>
                 <div className="text-stone-200">Analyser {normalizedTickers || 'la watchlist'} pour {researchBrief.owner || 'l’équipe'}: {researchBrief.brief}</div>
               </div>
+
+              <button
+                type="button"
+                onClick={saveBriefDraft}
+                disabled={isSavingBrief || !normalizedTickers || !researchBrief.brief.trim()}
+                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-orange-300/30 bg-white/[0.06] px-4 py-3 text-sm font-semibold text-orange-100 transition hover:bg-white/[0.1] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isSavingBrief ? <Loader2 className="animate-spin" size={16} /> : <FileText size={16} />}
+                Sauvegarder le brief serveur
+              </button>
 
               <button
                 type="button"
@@ -380,6 +507,26 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
               ) : null}
             </div>
           </div>
+
+          {briefHistory.length > 0 ? (
+            <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+              <div className="mb-3 text-xs uppercase tracking-[0.22em] text-stone-400">Historique serveur récent</div>
+              <div className="grid gap-3 md:grid-cols-3">
+                {briefHistory.slice(0, 3).map(brief => (
+                  <button
+                    key={brief.id}
+                    type="button"
+                    onClick={() => loadHistoryBrief(brief)}
+                    className="rounded-xl border border-white/10 bg-black/25 p-3 text-left transition hover:border-orange-300/50 hover:bg-white/[0.08]"
+                  >
+                    <div className="truncate text-sm font-semibold text-white">#{brief.id} · {brief.title}</div>
+                    <div className="mt-1 text-xs text-stone-400">{brief.owner} · {brief.status}</div>
+                    <div className="mt-2 truncate text-xs text-orange-200/80">{brief.tickers}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </section>
 
         <div className="mt-10 flex items-center gap-2 text-xs text-stone-500">
