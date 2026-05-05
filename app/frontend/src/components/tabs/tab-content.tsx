@@ -58,6 +58,13 @@ const RESEARCH_TEMPLATES: ResearchTemplate[] = [
     tickers: 'SPY,QQQ,TLT,GLD,USO',
     brief: 'Préparer une lecture macro multi-actifs: equity risk, duration, or, énergie, stress de marché et scénarios de couverture.',
   },
+  {
+    id: 'forex-major-pairs',
+    title: 'Forex · paires majeures',
+    owner: 'Raphaël + Alix',
+    tickers: 'EURUSD,GBPUSD,USDJPY,USDCHF,AUDUSD',
+    brief: 'Analyser les paires Forex majeures avec momentum, tendance, volatilité de change et scénario macro dollar/euro/yen.',
+  },
 ];
 
 function loadBriefState() {
@@ -621,14 +628,14 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
             <div className="space-y-3 text-sm leading-6 text-stone-300">
               <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-4">
                 <div className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-200">Disponible maintenant</div>
-                <div className="mt-2">Actions et ETF via tickers classiques, selon les données disponibles côté backend.</div>
+                <div className="mt-2">Actions, ETF et Forex spot quotidien. Exemples FX acceptés : EURUSD, EUR/USD, GBPUSD, USDJPY, EURUSD=X.</div>
               </div>
-              <div className="rounded-2xl border border-amber-400/20 bg-amber-400/10 p-4">
-                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-200">Forex</div>
-                <div className="mt-2">Pas encore natif/validé pour les paires FX type EUR/USD ou USD/JPY. On peut l’ajouter comme prochaine tranche avec fournisseur de données Forex, presets FX et nœuds macro dédiés.</div>
+              <div className="rounded-2xl border border-sky-400/20 bg-sky-400/10 p-4">
+                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-200">Forex</div>
+                <div className="mt-2">Nouveau : les paires FX majeures sont câblées via un fournisseur de taux quotidien. Les cours FX sont des taux de référence journaliers, pas encore des bougies intraday avec volume.</div>
               </div>
               <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-xs text-stone-400">
-                État produit : multi-actifs en intention, mais Forex non câblé en production tant qu’un flux de données FX fiable n’est pas branché et testé.
+                État produit : Forex opérationnel pour la recherche et les signaux techniques quotidiens. Les fondamentaux société, insiders et news restent propres aux actions/ETF.
               </div>
             </div>
           </div>

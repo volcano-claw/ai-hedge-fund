@@ -5,6 +5,13 @@ import pandas as pd
 import requests
 import time
 
+ISO_CURRENCIES = {
+    "AUD", "BGN", "BRL", "CAD", "CHF", "CNY", "CZK", "DKK", "EUR", "GBP",
+    "HKD", "HUF", "IDR", "ILS", "INR", "ISK", "JPY", "KRW", "MXN", "MYR",
+    "NOK", "NZD", "PHP", "PLN", "RON", "SEK", "SGD", "THB", "TRY", "USD",
+    "ZAR",
+}
+
 logger = logging.getLogger(__name__)
 
 from src.data.cache import get_cache
@@ -60,6 +67,81 @@ def _make_api_request(url: str, headers: dict, method: str = "GET", json_data: d
         return response
 
 
+def normalize_forex_ticker(ticker: str) -> tuple[str, str] | None:
+    """Return (base, quote) for supported FX tickers, else None.
+
+    Accepted input examples: EURUSD, EUR/USD, EUR-USD, EUR_USD, EURUSD=X.
+    """
+    symbol = ticker.strip().upper()
+    if symbol.endswith("=X"):
+        symbol = symbol[:-2]
+    for separator in ("/", "-", "_"):
+        symbol = symbol.replace(separator, "")
+    if len(symbol) != 6:
+        return None
+    base, quote = symbol[:3], symbol[3:]
+    if base in ISO_CURRENCIES and quote in ISO_CURRENCIES and base != quote:
+        return base, quote
+    return None
+
+
+def is_forex_ticker(ticker: str) -> bool:
+    return normalize_forex_ticker(ticker) is not None
+
+
+def _get_forex_prices(ticker: str, start_date: str, end_date: str) -> list[Price]:
+    """Fetch daily FX rates from Frankfurter and adapt them to the existing Price model.
+
+    Frankfurter provides daily reference rates, not OHLC candles. For Volcano Fund's
+    first FX slice we expose each daily reference rate as open/high/low/close with
+    volume=0. This makes FX usable in existing price/technical flows while keeping
+    the data-source limitation explicit in the UI/docs.
+    """
+    pair = normalize_forex_ticker(ticker)
+    if not pair:
+        return []
+    base, quote = pair
+
+    try:
+        response = requests.get(
+            f"https://api.frankfurter.app/{start_date}..{end_date}",
+            params={"from": base, "to": quote},
+            timeout=20,
+        )
+    except Exception as e:
+        logger.warning("Failed to fetch FX rates for %s: %s", ticker, e)
+        return []
+
+    if response.status_code != 200:
+        logger.warning("FX rates request failed for %s: HTTP %s", ticker, response.status_code)
+        return []
+
+    try:
+        payload = response.json()
+        rates = payload.get("rates", {})
+    except Exception as e:
+        logger.warning("Failed to parse FX rates for %s: %s", ticker, e)
+        return []
+
+    prices: list[Price] = []
+    for day in sorted(rates):
+        value = rates.get(day, {}).get(quote)
+        if value is None:
+            continue
+        rate = float(value)
+        prices.append(
+            Price(
+                open=rate,
+                close=rate,
+                high=rate,
+                low=rate,
+                volume=0,
+                time=day,
+            )
+        )
+    return prices
+
+
 def get_prices(ticker: str, start_date: str, end_date: str, api_key: str = None) -> list[Price]:
     """Fetch price data from cache or API."""
     # Create a cache key that includes all parameters to ensure exact matches
@@ -68,6 +150,12 @@ def get_prices(ticker: str, start_date: str, end_date: str, api_key: str = None)
     # Check cache first - simple exact match
     if cached_data := _cache.get_prices(cache_key):
         return [Price(**price) for price in cached_data]
+
+    if is_forex_ticker(ticker):
+        prices = _get_forex_prices(ticker, start_date, end_date)
+        if prices:
+            _cache.set_prices(cache_key, [p.model_dump() for p in prices])
+        return prices
 
     # If not in cache, fetch from API
     headers = {}
@@ -104,6 +192,8 @@ def get_financial_metrics(
     api_key: str = None,
 ) -> list[FinancialMetrics]:
     """Fetch financial metrics from cache or API."""
+    if is_forex_ticker(ticker):
+        return []
     # Create a cache key that includes all parameters to ensure exact matches
     cache_key = f"{ticker}_{period}_{end_date}_{limit}"
     
@@ -188,6 +278,8 @@ def get_insider_trades(
     api_key: str = None,
 ) -> list[InsiderTrade]:
     """Fetch insider trades from cache or API."""
+    if is_forex_ticker(ticker):
+        return []
     # Create a cache key that includes all parameters to ensure exact matches
     cache_key = f"{ticker}_{start_date or 'none'}_{end_date}_{limit}"
     
@@ -254,6 +346,8 @@ def get_company_news(
     api_key: str = None,
 ) -> list[CompanyNews]:
     """Fetch company news from cache or API."""
+    if is_forex_ticker(ticker):
+        return []
     # Create a cache key that includes all parameters to ensure exact matches
     cache_key = f"{ticker}_{start_date or 'none'}_{end_date}_{limit}"
     
@@ -318,6 +412,8 @@ def get_market_cap(
     api_key: str = None,
 ) -> float | None:
     """Fetch market cap from the API."""
+    if is_forex_ticker(ticker):
+        return None
     # Check if end_date is today
     if end_date == datetime.datetime.now().strftime("%Y-%m-%d"):
         # Get the market cap from company facts API

@@ -18,7 +18,7 @@ La surface est volontairement positionnée comme un **cockpit de recherche d’i
 - Écran d’accueil vide : branding Volcano Fund, statut, accès privé.
 - Textes de la surface Volcano Fund custom traduits en français : landing, brief, historique, revue opérateur, boutons et aides.
 - Bloc `Mode d’emploi Volcano Fund` dans l’interface : Codex Max, brief, flux, exécution, historique et revue.
-- Bloc `Couverture marchés` dans l’interface : actions/ETF disponibles selon données backend ; Forex déclaré non natif/non validé pour l’instant.
+- Bloc `Couverture marchés` dans l’interface : actions/ETF disponibles selon données backend ; Forex spot quotidien ajouté pour les paires majeures (`EURUSD`, `EUR/USD`, `GBPUSD`, `USDJPY`, `EURUSD=X`).
 - Panneau `Connexion Codex Max` : lance un device login Codex côté backend et affiche uniquement l’URL OpenAI + le code temporaire, jamais les tokens.
 - Backend route `GET /codex-auth/status`, `POST /codex-auth/device-login`, `DELETE /codex-auth/device-login`.
 - Le backend utilise un `CODEX_HOME` persistant sous `/app/data/codex-home` pour isoler l’auth Codex de Volcano Fund.
@@ -41,7 +41,7 @@ Statut actuel :
 - Runtime : backend et UI gérés par Docker/Compose, état sain.
 - Codex Max : auth CLI dédiée à Volcano Fund possible par device code ; aucun token n’est retourné au frontend.
 - Couverture marchés actuelle : actions/ETF via tickers classiques selon disponibilité des données backend.
-- Forex : non natif/non validé à ce stade ; les paires FX type `EUR/USD`, `EURUSD` ou `USDJPY` ne doivent pas être présentées comme supportées tant qu’un fournisseur FX dédié n’est pas branché et testé.
+- Forex : support initial branché via taux de référence quotidiens Frankfurter pour les paires ISO majeures. Formats acceptés : `EURUSD`, `EUR/USD`, `EUR-USD`, `EUR_USD`, `EURUSD=X`. Les données FX n’ont pas encore de volume ni d’OHLC intraday ; elles sont adaptées en open/high/low/close identiques au taux quotidien.
 - Santé : backend `GET /healthz`, UI `GET /healthz`.
 - Persistance briefs : table SQLite `volcano_research_briefs` + sauvegarde navigateur locale.
 - Persistance flux : stockage serveur existant `/flows/`.
