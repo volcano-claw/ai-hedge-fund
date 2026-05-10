@@ -22,7 +22,7 @@ interface AnalystSignal {
   reasoning?: string;
 }
 
-interface DecisionCard {
+export interface DecisionCard {
   ticker: string;
   verdict: 'favorable' | 'neutre' | 'défavorable' | 'incomplet';
   actionLabel: string;
@@ -81,7 +81,7 @@ function agentDisplayName(agentId: string): string {
   return names[base] || base.replace(/_/g, ' ');
 }
 
-function buildDecisionCards(outputData: DecisionBriefProps['outputData']): DecisionCard[] {
+export function buildDecisionCards(outputData: DecisionBriefProps['outputData']): DecisionCard[] {
   if (!outputData?.decisions) return [];
 
   return Object.entries(outputData.decisions).map(([ticker, decision]) => {

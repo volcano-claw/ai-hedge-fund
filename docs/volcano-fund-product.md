@@ -4,7 +4,7 @@
 
 Volcano Fund dispose d’une landing privée brandée au-dessus de l’interface de workflows existante d’AI Hedge Fund.
 
-La landing inclut maintenant une interface Volcano Fund en français : connexion CLI Codex Max par device code, mode d’emploi intégré, statut de couverture marchés/Forex, brief de recherche guidé, persistance serveur, historique **brief → flux → exécution**, fiche décision post-run, et panneau de **revue opérateur** persistante. L’opérateur peut préparer une connexion Codex dédiée à Volcano Fund sans exposer de token, comprendre le parcours d’utilisation directement dans l’interface, choisir un modèle, modifier le responsable, modifier la liste de tickers, écrire une question de recherche, sauvegarder le brouillon côté backend, recharger les briefs récents depuis l’historique serveur, créer/ouvrir un vrai flux prérempli depuis ce brief, voir le statut flux/exécution lié, lire une fiche décision structurée après exécution, puis sauvegarder des notes de revue pour la dernière exécution.
+La landing inclut maintenant une interface Volcano Fund en français : connexion CLI Codex Max par device code, mode d’emploi intégré, statut de couverture marchés/Forex, brief de recherche guidé, persistance serveur, historique **brief → flux → exécution**, fiche décision post-run, panneau de **revue opérateur** persistante et snapshot de décision figé avec la revue. L’opérateur peut préparer une connexion Codex dédiée à Volcano Fund sans exposer de token, comprendre le parcours d’utilisation directement dans l’interface, choisir un modèle, modifier le responsable, modifier la liste de tickers, écrire une question de recherche, sauvegarder le brouillon côté backend, recharger les briefs récents depuis l’historique serveur, créer/ouvrir un vrai flux prérempli depuis ce brief, voir le statut flux/exécution lié, lire une fiche décision structurée après exécution, puis sauvegarder des notes de revue et le résumé décisionnel associé pour la dernière exécution.
 
 URL live :
 
@@ -31,6 +31,8 @@ La surface est volontairement positionnée comme un **cockpit de recherche d’i
 - Les briefs de recherche sont persistés côté serveur via `POST/GET/PUT/DELETE /research-briefs/`.
 - L’endpoint enrichi `GET /research-briefs/history/` retourne chaque brief récent avec `flow_name`, `run_count`, `latest_run_id`, `latest_run_status`, timestamp de dernière exécution, et résumé de revue si disponible.
 - Les revues opérateur des exécutions sont persistées via `GET/PUT/DELETE /run-reviews/{run_id}` dans la table `volcano_run_reviews`.
+- À l’ouverture d’une revue depuis l’historique, l’UI charge le détail du dernier run via `/flows/{flow_id}/runs/{run_id}`, dérive le snapshot de fiche décision depuis `results`, puis le fige dans `extra_metadata.decision_snapshot` au moment de sauvegarder la revue.
+- Le panneau de revue affiche le snapshot figé lorsqu’il existe, ou indique clairement quand il n’est pas encore disponible.
 - Le panneau de brief charge l’historique serveur récent, peut restaurer un brief récent dans le formulaire, affiche le statut flux/exécution lié, et ouvre un panneau de revue pour la dernière exécution.
 - Le panneau de revue stocke `review_status`, `decision`, `reviewer` et notes libres.
 - L’action de création/ouverture sauvegarde ou met à jour le brief serveur, crée un vrai flow via `/flows/`, puis lie le brief au `flow_id` généré avec le statut `flow_created`.
@@ -51,7 +53,8 @@ Statut actuel :
 - Persistance flux : stockage serveur existant `/flows/`.
 - Statut exécutions : agrégation en lecture seule depuis les données existantes `/flows/{flow_id}/runs`.
 - Revue exécution : notes/statuts opérateur persistés dans `volcano_run_reviews`; c’est une métadonnée de revue humaine, pas du conseil financier automatisé.
-- Fiche décision : synthèse post-run non persistée séparément pour cette tranche ; elle est recalculée côté UI depuis la sortie du run courant et sert de lecture opérationnelle avant revue humaine.
+- Snapshot décision : les cartes de fiche décision peuvent désormais être figées dans `volcano_run_reviews.extra_metadata.decision_snapshot` lors de la sauvegarde de la revue, pour conserver le résumé lu au moment de la décision humaine.
+- Fiche décision : synthèse post-run non persistée séparément comme table dédiée pour cette tranche ; elle est recalculée côté UI depuis la sortie du run courant, puis éventuellement figée avec la revue opérateur.
 - Trading : aucune exécution réelle de trading n’est activée.
 
 Cette tranche francise la surface Volcano Fund que nous avons ajoutée dans le fork. L’UI upstream d’origine contient encore des écrans anglais hors de cette surface ; ils pourront être francisés progressivement ou via une vraie internationalisation `fr/en`.
@@ -60,8 +63,8 @@ Cette tranche francise la surface Volcano Fund que nous avons ajoutée dans le f
 
 Construire la tranche “détail de run persistant” Volcano Fund :
 
-1. persister la fiche décision comme snapshot de run,
-2. ajouter un tiroir dédié détail + revue d’exécution,
-3. ajouter des snapshots avant/après décision pour les exécutions revues,
+1. ajouter un tiroir dédié détail + revue d’exécution,
+2. ajouter des snapshots avant/après décision pour les exécutions revues,
+3. promouvoir le snapshot vers une table dédiée si l’historique devient multi-run / multi-review,
 4. ajouter des presets analystes éditables par modèle de brief,
 5. puis passer à une vraie auth applicative si l’usage multi-utilisateur devient important.

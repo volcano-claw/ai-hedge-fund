@@ -1,6 +1,8 @@
 import { useTabsContext } from '@/contexts/tabs-context';
 import { cn } from '@/lib/utils';
+import { buildDecisionCards, type DecisionCard } from '@/components/panels/bottom/tabs/decision-brief';
 import { codexAuthService, type CodexAuthStatus, type CodexDeviceLogin } from '@/services/codex-auth-service';
+import { flowRunService } from '@/services/flow-run-service';
 import { flowService } from '@/services/flow-service';
 import { researchBriefService, type ResearchBriefRecord } from '@/services/research-brief-service';
 import { runReviewService } from '@/services/run-review-service';
@@ -221,6 +223,8 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
   const [reviewStatus, setReviewStatus] = useState('draft');
   const [reviewDecision, setReviewDecision] = useState('watch');
   const [reviewNotes, setReviewNotes] = useState('');
+  const [reviewSnapshot, setReviewSnapshot] = useState<DecisionCard[] | null>(null);
+  const [reviewSnapshotMessage, setReviewSnapshotMessage] = useState<string | null>(null);
   const [isSavingReview, setIsSavingReview] = useState(false);
   const [reviewMessage, setReviewMessage] = useState<string | null>(null);
   const [codexStatus, setCodexStatus] = useState<CodexAuthStatus | null>(null);
@@ -369,18 +373,38 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
     setReviewStatus(brief.review_status || 'draft');
     setReviewDecision(brief.review_decision || 'watch');
     setReviewNotes(brief.review_notes || '');
+    setReviewSnapshot(null);
+    setReviewSnapshotMessage('Chargement de la fiche décision persistante…');
     setReviewMessage(null);
 
     try {
       const review = await runReviewService.getReview(brief.latest_run_id);
+      const savedSnapshot = review?.extra_metadata?.decision_snapshot;
       if (review) {
         setReviewStatus(review.review_status || 'draft');
         setReviewDecision(review.decision || 'watch');
         setReviewNotes(review.notes || '');
       }
+      if (Array.isArray(savedSnapshot)) {
+        setReviewSnapshot(savedSnapshot as DecisionCard[]);
+        setReviewSnapshotMessage('Snapshot de décision déjà persisté avec cette revue.');
+        return;
+      }
     } catch (error) {
       console.error('Échec du chargement de la revue de l’exécution:', error);
       setReviewMessage('Revue non chargée ; création possible.');
+    }
+
+    try {
+      const run = await flowRunService.getRun(brief.flow_id, brief.latest_run_id);
+      const snapshot = buildDecisionCards(run.results as Parameters<typeof buildDecisionCards>[0]);
+      setReviewSnapshot(snapshot);
+      setReviewSnapshotMessage(snapshot.length > 0
+        ? 'Snapshot dérivé du résultat de run ; il sera figé lors de la sauvegarde de la revue.'
+        : 'Aucune fiche décision exploitable trouvée dans ce run.');
+    } catch (error) {
+      console.error('Échec du chargement du détail de run:', error);
+      setReviewSnapshotMessage('Détail du run indisponible ; la revue reste sauvegardable sans snapshot.');
     }
   };
 
@@ -428,7 +452,12 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
         decision: reviewDecision,
         reviewer: researchBrief.owner || 'Raphaël',
         notes: reviewNotes,
-        extra_metadata: { source: 'volcano-fund-landing-review-panel' },
+        extra_metadata: {
+          source: 'volcano-fund-landing-review-panel',
+          decision_snapshot: reviewSnapshot || [],
+          decision_snapshot_version: 1,
+          decision_snapshot_saved_at: new Date().toISOString(),
+        },
       });
       await refreshBriefHistory();
       setReviewMessage(`Revue sauvegardée pour l’exécution #${selectedRunReview.runId}`);
@@ -835,6 +864,28 @@ function VolcanoFundWelcome({ className }: TabContentProps) {
                   </select>
                 </label>
               </div>
+
+              {reviewSnapshotMessage ? (
+                <div className="mt-4 rounded-xl border border-sky-300/20 bg-sky-400/10 p-3 text-xs text-sky-50">{reviewSnapshotMessage}</div>
+              ) : null}
+
+              {reviewSnapshot && reviewSnapshot.length > 0 ? (
+                <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-4">
+                  <div className="mb-3 text-xs uppercase tracking-[0.18em] text-stone-400">Snapshot décision figé</div>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {reviewSnapshot.map(card => (
+                      <div key={card.ticker} className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-sm text-stone-100">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-semibold text-white">{card.ticker}</span>
+                          <span className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] uppercase text-emerald-100">{card.verdict}</span>
+                        </div>
+                        <div className="mt-2 text-xs text-stone-300">{card.actionLabel} · conviction {card.confidence.toFixed(1)}%</div>
+                        <div className="mt-2 text-xs leading-5 text-stone-300">{card.nextAction}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
 
               <label className="mt-4 block text-xs uppercase tracking-[0.18em] text-stone-400">
                 Notes
